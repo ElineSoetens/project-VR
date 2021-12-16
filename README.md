@@ -1,2 +1,7 @@
 # project-VR
 project for the VR class
+
+#basic idea we want to have in it
+1. cube map for the decor
+2. A small robot (object with texture) that user can move (touch deplace it)
+3. implement bump mapping with a tapis/ a planet if we go with galaxy theme
