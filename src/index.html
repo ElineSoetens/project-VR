@@ -8,16 +8,8 @@
     <h1>Implement a reflective object</h1>
     <p>You will need two shaders, one for the cubemap, one for the object</p>
     <p>Main steps:</p>
-    <ul>
-        <li>1) Load an object</li>
-        <li>2) Write the shaders for the cubemap</li>
-        <li>3) Write the shaders for the effect</li>
-        <li>4) Define useful vector and matrices for the shaders</li>
-        <li>5) Look at the code to load the cubemap</li>
-        <li>6) Write the rendering loop code for the object</li>
-        <li>7) Write the rendering loop code for the depth map</li>
-    </ul>
-    <canvas id="webgl_canvas" width="500" height="500"></canvas>
+    
+    <canvas id="webgl_canvas" width="600" height="600"></canvas>
     <div id="fps"></div>
     <div id="camera_mat"></div>
     <div id="proj_mat"></div>
@@ -95,47 +87,6 @@
         v_frag_coord = frag_coord.xyz;
       }
     `;
-
-            /*const source_effect_F = `
-      precision mediump float;
-      
-      varying vec3 v_normal;
-      varying vec3 v_frag_coord;
-      
-      // We need the camera position to display a reflection/refraction!
-      uniform vec3 u_view_dir;
-      // This time We need the cubemap to display a reflection/refraction!
-      uniform samplerCube u_cubemap;
-
-      void main() {
-        vec3 I = normalize(v_frag_coord - u_view_dir);
-        vec3 R = reflect(I, normalize(v_normal));
-        gl_FragColor = vec4(textureCube(u_cubemap, R).rgb, 1.0);
-      }
-    `;
-    
-                const source_effect_V = `
-      attribute vec3 position;
-      attribute vec2 texcoord;
-      attribute vec3 normal;
-
-      varying vec3 v_normal;
-      varying vec3 v_frag_coord;
-
-      uniform mat4 M;
-      uniform mat4 itM;  // inverse transpose model!
-      uniform mat4 V;
-      uniform mat4 P;
-      
-
-      void main() {
-        3) Shader code for the object
-        vec4 frag_coord = M*vec4(position, 1.0);
-        gl_Position = (P*V*frag_coord);
-        v_normal = vec3(itM * vec4(normal, 1.0));
-        v_frag_coord = frag_coord.xyz;
-      }
-    `;*/
 
             const source_effect_F = `
       precision mediump float;
