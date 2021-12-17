@@ -37,6 +37,9 @@ var load_obj = async function(name = 'bunny_small.obj') {
               var f1 = parts[1].split('/');
               var f2 = parts[2].split('/');
               var f3 = parts[3].split('/');
+
+              //Need to compute tangente and bitangent I guess
+
               // Push vertex 1 of the face
               Array.prototype.push.apply(
                 vertices, positions[parseInt(f1[0]) - 1]
