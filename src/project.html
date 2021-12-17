@@ -67,7 +67,7 @@
       }
     `;
 
-    const source_effect_V = `
+            const source_effect_V = `
       attribute vec3 position;
       attribute vec2 texcoord;
       attribute vec3 normal;
@@ -105,9 +105,46 @@
       }
     `;
 
+            const source_planet_V = `
+      attribute vec3 position;
+      attribute vec2 texcoord;
+      attribute vec3 normal;
+      varying vec2 v_texcoord;
+      varying vec3 v_color;
+      
+      uniform mat4 M;
+      uniform mat4 V;
+      uniform mat4 P;
+
+      void main() {
+        gl_Position = P*V*M*vec4(position, 1);
+        v_texcoord = texcoord;
+        // We will display the normals as a color
+        v_color = (normal+1.0)/2.0;
+      }
+    `;
+
+            const source_planet_F = `
+      precision mediump float;
+      varying vec2 v_texcoord;
+      varying vec3 v_color;
+      
+      uniform sampler2D u_texture;
+
+      void main() {
+        gl_FragColor = texture2D(u_texture, vec2(v_texcoord.x, 1.0-v_texcoord.y));
+        //gl_FragColor = vec4(normalize(v_color), 1.0);
+      }
+    `;
+
             var shader_cubemap = make_shader(gl, sourceV, sourceF);
             // Shader for the cube
             var shader_effect = make_shader(gl, source_effect_V, source_effect_F);
+
+            //Shader for the planet
+            var shader_planet = make_shader(gl,source_planet_V, source_planet_F);
+
+            var tex_planet = make_texture(gl,"../textures/moon.jpg");
             
             // 1) Load an object
             // loading the object from a file
@@ -118,10 +155,16 @@
             var obj = await load_obj('../objects/bunny_small.obj');
             var obj_mesh = await make_object(gl, obj)
 
+            // Object planet
+            var planet = await load_obj('../objects/sphere_smooth.obj');
+            var pl_mesh = await make_object(gl, planet)
+
             // Let's move it a bit
             obj_mesh.model = glMatrix.mat4.translate(obj_mesh.model,
                                                         obj_mesh.model,
                                                         glMatrix.vec3.fromValues(-0.5, 0.0, 1.0));
+            
+            pl_mesh.model = glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(1.5,0.0,-4.0));
             
 
             
@@ -187,6 +230,19 @@
                 gl.uniform1i(u_cubemap, 0);
 
                 obj_mesh.draw();
+
+                //draw the planet
+                shader_planet.use();
+                pl_mesh.activate(shader_planet);
+
+                var unif = shader_planet.get_uniforms();
+
+                view = camera.get_view_matrix();
+                gl.uniformMatrix4fv(unif['model'], false, pl_mesh.model);
+                gl.uniformMatrix4fv(unif['view'], false, view);
+                gl.uniformMatrix4fv(unif['proj'], false, projection);
+
+                pl_mesh.draw();
 
 
                 //*    // uncomment only one slash "/" to comment the cubemap ;)
