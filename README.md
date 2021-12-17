@@ -6,3 +6,4 @@ project for the VR class
 2. A small robot (object with texture) that user can move (touch deplace it)
 3. implement bump mapping with a tapis/ a planet if we go with galaxy theme 
 source for planet texture (+ bump map) : http://planetpixelemporium.com/planets.html
+  https://free3d.com/3d-model/moon-photorealistic-2k-853071.html
