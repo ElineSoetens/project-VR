@@ -162,10 +162,15 @@
             // Let's move it a bit
             obj_mesh.model = glMatrix.mat4.translate(obj_mesh.model,
                                                         obj_mesh.model,
-                                                        glMatrix.vec3.fromValues(-0.5, 0.0, 1.0));
+                                                        glMatrix.vec3.fromValues(0.0, 0.0, 20.0));
             
-            pl_mesh.model = glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(1.5,0.0,-4.0));
-            
+			//satellite's original position must have distance to object it rotates aound
+			// respecting this p_sat/p_obj = rotation radius or p_obj/p_sat = rotation radius
+            //p_sat = satellite position
+			//p_obj = object position
+			pl_mesh.model = glMatrix.mat4.translate
+							(pl_mesh.model,pl_mesh.model,
+							glMatrix.vec3.fromValues(0.0,0.0,26.6));            
 
             
             
@@ -236,6 +241,36 @@
                 pl_mesh.activate(shader_planet);
 
                 var unif = shader_planet.get_uniforms();
+				
+				
+				//// Planet motion ////
+				
+				// Angle of rotation
+				var rot_ang = 0.05;
+				var rot_axis = glMatrix.vec3.fromValues(0.0,1.0,0.0);
+				
+				//Create quaternion
+				var rot_quat = glMatrix.quat.create();
+				glMatrix.quat.setAxisAngle(rot_quat, rot_axis, rot_ang);
+				
+				//Create rotation matrix from quaternion
+				var rot = glMatrix.mat4.create();
+				var translation = glMatrix.vec3.fromValues(0.0,0.0,0.0);
+				var scaling = glMatrix.vec3.fromValues(1.0,1.0,1.0);
+				var origin = glMatrix.vec3.fromValues(0.0,0.0,20.0)
+				
+				glMatrix.mat4.fromRotationTranslationScaleOrigin
+				(rot, rot_quat,translation, scaling, origin) ;
+				
+				//invert it
+				var rot_inv = glMatrix.mat4.create();
+				glMatrix.mat4.invert(rot_inv,rot);
+				
+				//Apply rotation
+				glMatrix.mat4.multiply(pl_mesh.model,rot,pl_mesh.model);
+				
+				//Can be nice effect around origin = (0,0,0) but else uncontrollable
+				//glMatrix.mat4.multiply(pl_mesh.model,glMatrix.mat4.multiply(pl_mesh.model,rot,pl_mesh.model),rot_inv);
 
                 view = camera.get_view_matrix();
                 gl.uniformMatrix4fv(unif['model'], false, pl_mesh.model);
