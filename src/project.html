@@ -16,6 +16,7 @@
 
     <script src="../gl-matrix-min.js"></script>
     <script language="javascript" type="text/javascript" src="../camera.js"></script>
+    <script language="javascript" type="text/javascript" src="functions.js"></script>
     <script language="javascript" type="text/javascript" src="../shaders.js"></script>
     <script language="javascript" type="text/javascript" src="textures.js"></script>
     <script language="javascript" type="text/javascript" src="objects.js"></script>
@@ -162,6 +163,7 @@
         vec3 L = normalize(u_light_pos - v_frag_coord);
 
         //vec3 normal = normalize(v_normal);
+
         //vec3 get normal from bump map
         vec3 normal = texture2D(u_bumpmap, vec2(v_texcoord.x, 1.0-v_texcoord.y)).rgb;
         normal = normalize(normal*2.0 - 1.0);
@@ -181,6 +183,8 @@
       attribute vec3 position;
       attribute vec2 texcoord;
       attribute vec3 normal;
+      attribute vec3 tangent;
+      attribute vec3 bitangent;
 
       varying vec3 v_normal;
       varying vec3 v_frag_coord;
@@ -212,6 +216,7 @@
 
       uniform vec3 u_light_pos;
       uniform vec3 u_view_dir;
+      uniform sampler2D u_texture;
       
 
       void main() {
@@ -219,10 +224,10 @@
         vec3 normal = normalize(v_normal);
 
         // light color
-        vec3 light_color = vec3(0.9, 0.3, 0.4);
+        vec3 light_color = vec3(1.0, 1.0, 0.99);
 
         // Ambient
-        float ambient = 0.5;
+        float ambient = 0.1;
 
         vec3 L = normalize(u_light_pos - v_frag_coord);
 
@@ -237,9 +242,10 @@
         float specular = spec_strength * spec;
 
         vec3 color = (ambient + specular + diffusion) * light_color;
+        //vec3 color = (normal+1.0)/2.0;
         
-        gl_FragColor = vec4(color, 1.0);
-        
+        //gl_FragColor = vec4(color, 1.0);
+        gl_FragColor = vec4(light_color,1.0)* texture2D(u_texture, vec2(v_texcoord.x, 1.0-v_texcoord.y));
         
       }
     `;
@@ -264,6 +270,9 @@
             //var tex_planet = make_texture(gl,"../textures/brickwall.jpg");
             const u_tex_moon = gl.getUniformLocation(shader_planet.program, 'u_texture');
 
+            var tex_sun = make_texture(gl,"../textures/sun.jpg");
+            const u_tex_sun = gl.getUniformLocation(shader_sun.program, 'u_texture');
+
             
             
             // 1) Load an object
@@ -280,6 +289,10 @@
             //var planet = await load_obj('../objects/plane.obj');
             var pl_mesh = await make_object(gl, planet)
 
+            var planet2 = await load_obj('../objects/Moon2_2K.obj');
+            //var planet = await load_obj('../objects/plane.obj');
+            var pl_mesh2 = await make_object(gl, planet2)
+
             //Object Sun
             var sun = await load_obj('../objects/sphere_smooth.obj');
             var sun_mesh = await make_object(gl, sun);
@@ -290,20 +303,22 @@
                                                         glMatrix.vec3.fromValues(-0.5, 0.0, 1.0));
                                                        
             
-            pl_mesh.model = glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(1.5,0.0,-4.0));
-            pl_mesh.model = glMatrix.mat4.rotate(pl_mesh.model,pl_mesh.model,1.5, glMatrix.vec3.fromValues(1.0,0.0,0.0)); 
+            pl_mesh.model = glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
+            pl_mesh2.model = glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(-0.5,6.0,7.0));
+            //pl_mesh.model = glMatrix.mat4.rotate(pl_mesh.model,pl_mesh.model,1.5, glMatrix.vec3.fromValues(1.0,0.0,0.0)); 
 
 
             // We define a light in space and retrieve its ID in the shader
-            const light_pos = glMatrix.vec3.fromValues(4.0, 5.0, -1.8);
+            const light_pos = glMatrix.vec3.fromValues(-7.0, 0.0, 1.0);
             const u_light_pos = gl.getUniformLocation(shader_planet.program, 'u_light_pos');
+            const u_light_pos_sun = gl.getUniformLocation(shader_sun.program, 'u_light_pos');
             
             // We need to send the inverse transpose of the model matrix for the model
             //const u_itM_p = gl.getUniformLocation(shader_planet.program, 'itM');
 
             //Translate position of the sun to coincide with light source position
             sun_mesh.model = glMatrix.mat4.translate(sun_mesh.model, sun_mesh.model, light_pos);
-            
+            //sun_mesh.model = glMatrix.mat4.translate(sun_mesh.model, sun_mesh.model, glMatrix.vec3.fromValues(-0.5,0.0,7.0));
             
             
             position = glMatrix.vec3.fromValues(0, 0, -4.0)
@@ -374,6 +389,11 @@
 
                 var unif = shader_planet.get_uniforms();
 
+                //// Planet Motion ////
+                satellite_rot(pl_mesh.model,0.05, glMatrix.vec3.fromValues(0.0,1.0,0.0),
+                                  light_pos,glMatrix.vec3.fromValues(0.0,0.0,0.0),
+                                  glMatrix.vec3.fromValues(1.0,1.0,1.0))
+
                 view = camera.get_view_matrix();
                 gl.uniformMatrix4fv(unif['model'], false, pl_mesh.model);
                 gl.uniformMatrix4fv(unif['view'], false, view);
@@ -396,11 +416,51 @@
 
                 pl_mesh.draw();
 
+                pl_mesh2.activate(shader_planet);
+
+                //// Planet Motion ////
+                satellite_rot(pl_mesh2.model,0.05, glMatrix.vec3.fromValues(-1.0,1.0,0.0),
+                                  light_pos,glMatrix.vec3.fromValues(0.0,0.0,0.0),
+                                  glMatrix.vec3.fromValues(1.0,1.0,1.0))
+                gl.uniformMatrix4fv(unif['model'], false, pl_mesh2.model);
+                var itM = glMatrix.mat4.create();
+                itM = glMatrix.mat4.invert(itM, pl_mesh.model);
+                itM = glMatrix.mat4.transpose(itM,itM);
+                gl.uniformMatrix4fv(unif['itmodel'],false,itM);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, tex_planet);
+                gl.uniform1i(u_tex_moon,0);
+
+                gl.activeTexture(gl.TEXTURE1);
+                gl.bindTexture(gl.TEXTURE_2D, bump_map);
+                gl.uniform1i(u_bump_map,1);
+
+                pl_mesh2.draw();
+
+
                 //draw the sun
                 shader_sun.use();
                 sun_mesh.activate(shader_sun);
 
                 var unif = shader_sun.get_uniforms();
+
+                view = camera.get_view_matrix();
+                gl.uniformMatrix4fv(unif['model'], false, sun_mesh.model);
+                gl.uniformMatrix4fv(unif['view'], false, view);
+                gl.uniformMatrix4fv(unif['proj'], false, projection);
+                //send the light pos
+                gl.uniform3fv(u_light_pos_sun, light_pos);
+                var itM = glMatrix.mat4.create();
+                itM = glMatrix.mat4.invert(itM, sun_mesh.model);
+                itM = glMatrix.mat4.transpose(itM,itM);
+                gl.uniformMatrix4fv(unif['itmodel'],false,itM);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, tex_sun);
+                gl.uniform1i(u_tex_sun,0);
+
+                sun_mesh.draw();
 
                 
 

@@ -38,7 +38,8 @@ var load_obj = async function(name = 'bunny_small.obj') {
               var f2 = parts[2].split('/');
               var f3 = parts[3].split('/');
 
-              //Need to compute tangente and bitangent I guess
+              //Need to compute tangente and bitangent 
+              //computation comes from learn open gl : 
               pos1 = positions[parseInt(f1[0]) - 1];
               pos2 = positions[parseInt(f2[0]) - 1];
               pos3 = positions[parseInt(f3[0]) - 1];
