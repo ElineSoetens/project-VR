@@ -245,32 +245,11 @@
 				
 				//// Planet motion ////
 				
-				// Angle of rotation
-				var rot_ang = 0.05;
-				var rot_axis = glMatrix.vec3.fromValues(0.0,1.0,0.0);
-				
-				//Create quaternion
-				var rot_quat = glMatrix.quat.create();
-				glMatrix.quat.setAxisAngle(rot_quat, rot_axis, rot_ang);
-				
-				//Create rotation matrix from quaternion
-				var rot = glMatrix.mat4.create();
-				var translation = glMatrix.vec3.fromValues(0.0,0.0,0.0);
-				var scaling = glMatrix.vec3.fromValues(1.0,1.0,1.0);
-				var origin = glMatrix.vec3.fromValues(0.0,0.0,20.0)
-				
-				glMatrix.mat4.fromRotationTranslationScaleOrigin
-				(rot, rot_quat,translation, scaling, origin) ;
-				
-				//invert it
-				var rot_inv = glMatrix.mat4.create();
-				glMatrix.mat4.invert(rot_inv,rot);
-				
-				//Apply rotation
-				glMatrix.mat4.multiply(pl_mesh.model,rot,pl_mesh.model);
-				
-				//Can be nice effect around origin = (0,0,0) but else uncontrollable
-				//glMatrix.mat4.multiply(pl_mesh.model,glMatrix.mat4.multiply(pl_mesh.model,rot,pl_mesh.model),rot_inv);
+				//// Planet motion //// 
+				satellite_rot(pl_mesh.model,0.05, glMatrix.vec3.fromValues(0.0,1.0,0.0),
+					      glMatrix.vec3.fromValues(0.0,0.0,20.0),
+					      glMatrix.vec3.fromValues(0.0,0.0,0.0),
+					      glMatrix.vec3.fromValues(1.0,1.0,1.0))
 
                 view = camera.get_view_matrix();
                 gl.uniformMatrix4fv(unif['model'], false, pl_mesh.model);
