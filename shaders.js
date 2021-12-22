@@ -30,10 +30,12 @@ var make_shader = function (gl, vertex_shader, fragment_shader) {
         const u_M = gl.getUniformLocation(program, 'M');
         const u_V = gl.getUniformLocation(program, 'V');
         const u_P = gl.getUniformLocation(program, 'P');
+        const u_itM = gl.getUniformLocation(program, 'itM');
         return {
             "model": u_M,
             "view": u_V,
             "proj": u_P,
+            "itmodel": u_itM,
         }
     }
     
