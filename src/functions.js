@@ -48,3 +48,25 @@ function satellite_rot(model,rot_ang,rot_axis,origin,
 				
 				*/
 }
+
+function activateParticle(gl,shader, buffer){
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    const sizeofFloat = Float32Array.BYTES_PER_ELEMENT;
+    const att_ver = gl.getAttribLocation(shader.program, 'vertex');
+    gl.enableVertexAttribArray(att_ver);
+    gl.vertexAttribPointer(att_ver, 3, gl.FLOAT, false, 3 * sizeofFloat, 0 * sizeofFloat); 
+
+}
+
+class Particle {
+	//Note position and velocity should be glMatrix.vec2
+	//color should be a glMatrix.vec4
+	//life is a float
+	constructor(position, velocity, color, life){
+		this.position = position;
+		this.velocity = velocity;
+		this.color = color;
+		this.life = life;
+	}
+}
