@@ -272,8 +272,12 @@
 
             var tex_sun = make_texture(gl,"../textures/sun.jpg");
             const u_tex_sun = gl.getUniformLocation(shader_sun.program, 'u_texture');
+			
+            var tex_robot = make_texture(gl,"../textures/metal.jpg");
+			const u_tex_robot = gl.getUniformLocation(shader_planet.program, 'u_texture');
 
-            
+            var bump_map_robot = make_texture(gl,"../textures/metal_normal.jpg")
+            const u_bump_map_robot = gl.getUniformLocation(shader_planet.program, 'u_bumpmap');
             
             // 1) Load an object
             // loading the object from a file
@@ -296,16 +300,26 @@
             //Object Sun
             var sun = await load_obj('../objects/sphere_smooth.obj');
             var sun_mesh = await make_object(gl, sun);
+			
+			//Object Robot
+            var robot = await load_obj('../objects/sphere_smooth.obj');
+            var robot_mesh = await make_object(gl, robot);
 
-            // Let's move it a bit
-            obj_mesh.model = glMatrix.mat4.translate(obj_mesh.model,
-                                                        obj_mesh.model,
-                                                        glMatrix.vec3.fromValues(-0.5, 0.0, 1.0));
-                                                       
-            
-            pl_mesh.model = glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
-            pl_mesh2.model = glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(-0.5,6.0,7.0));
-            //pl_mesh.model = glMatrix.mat4.rotate(pl_mesh.model,pl_mesh.model,1.5, glMatrix.vec3.fromValues(1.0,0.0,0.0)); 
+            // Let's move them a bit
+            //glMatrix.mat4.translate(obj_mesh.model,obj_mesh.model,glMatrix.vec3.fromValues(-0.5, 0.0, 1.0));
+            glMatrix.mat4.translate(obj_mesh.model,obj_mesh.model,glMatrix.vec3.fromValues(-0.5, 0.0, 20.0));
+            glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
+            //glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(-0.5,6.0,7.0));
+			glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
+            //glMatrix.mat4.rotate(pl_mesh.model,pl_mesh.model,1.5, glMatrix.vec3.fromValues(1.0,0.0,0.0)); 
+			
+
+
+			//glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model, glMatrix.vec3.fromValues(0.0,0.0,20.0));
+			moveObjectKey(document,robot_mesh.model,1.0);
+			
+			var colliders =[];
+			colliders.push(pl_mesh.model, pl_mesh2.model,robot_mesh.model);
 
 
             // We define a light in space and retrieve its ID in the shader
@@ -346,11 +360,15 @@
             // We need to send the camera position to the shader
             const u_view_dir = gl.getUniformLocation(shader_effect.program, 'u_view_dir');
 
-
             var deltaTime = 0;
-
+			var prev_in_collision = [];
+			var theta1 =0.01;
+			var theta2 =0.01;
+			
             function animate(time) {
                 deltaTime += 0.005;
+				var in_collision = checkCollisions(colliders,1.7, robot_mesh.model, 1.7);
+				console.log(pl_mesh.model == pl_mesh2.model);
                 camera.update(deltaTime);
                 //Draw loop
                 gl.clearColor(0.2, 0.2, 0.2, 1);
@@ -361,7 +379,7 @@
                 shader_effect.use();
                 obj_mesh.activate(shader_effect);
 
-                // 6) Write the code to draw the scene!
+                //// Bunny ////
                 var unif = shader_effect.get_uniforms();
 
                 view = camera.get_view_matrix();
@@ -382,15 +400,26 @@
                 gl.uniform1i(u_cubemap, 0);
 
                 obj_mesh.draw();
+				
 
-                //draw the planet
+             //// Planets  ////  
                 shader_planet.use();
+				
+				//// Planet 1 ////
                 pl_mesh.activate(shader_planet);
 
                 var unif = shader_planet.get_uniforms();
 
-                //// Planet Motion ////
-                satellite_rot(pl_mesh.model,0.05, glMatrix.vec3.fromValues(0.0,1.0,0.0),
+                // Planet Motion 
+				
+				
+				if (in_collision.includes(pl_mesh.model) 
+				&& prev_in_collision.includes(pl_mesh.model)== false
+				){
+					theta1 = -theta1
+				}
+				
+                satellite_rot(pl_mesh.model,theta1, glMatrix.vec3.fromValues(0.0,1.0,0.0),
                                   light_pos,glMatrix.vec3.fromValues(0.0,0.0,0.0),
                                   glMatrix.vec3.fromValues(1.0,1.0,1.0))
 
@@ -415,31 +444,62 @@
                 gl.uniform1i(u_bump_map,1);
 
                 pl_mesh.draw();
+				
+				
+				//// Planet 2 ////
+               // pl_mesh2.activate(shader_planet);
 
-                pl_mesh2.activate(shader_planet);
-
-                //// Planet Motion ////
-                satellite_rot(pl_mesh2.model,0.05, glMatrix.vec3.fromValues(-1.0,1.0,0.0),
+                // Planet Motion 
+				if (in_collision.includes(pl_mesh2.model) 
+				&& prev_in_collision.includes(pl_mesh2.model)== false){
+					theta2 = -theta2
+				}
+                satellite_rot(pl_mesh2.model,theta2, glMatrix.vec3.fromValues(-1.0,1.0,0.0),
                                   light_pos,glMatrix.vec3.fromValues(0.0,0.0,0.0),
                                   glMatrix.vec3.fromValues(1.0,1.0,1.0))
+				
                 gl.uniformMatrix4fv(unif['model'], false, pl_mesh2.model);
                 var itM = glMatrix.mat4.create();
-                itM = glMatrix.mat4.invert(itM, pl_mesh.model);
+                itM = glMatrix.mat4.invert(itM, pl_mesh2.model);
                 itM = glMatrix.mat4.transpose(itM,itM);
                 gl.uniformMatrix4fv(unif['itmodel'],false,itM);
-
-                gl.activeTexture(gl.TEXTURE0);
+				
+				// Don't need to activate once it is activated
+                /*gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, tex_planet);
                 gl.uniform1i(u_tex_moon,0);
 
                 gl.activeTexture(gl.TEXTURE1);
                 gl.bindTexture(gl.TEXTURE_2D, bump_map);
                 gl.uniform1i(u_bump_map,1);
-
+*/
                 pl_mesh2.draw();
+				
+				//// Robot ////
+				//robot_mesh.activate(shader_planet);
+				if(in_collision.includes(robot_mesh.model)){
+					glMatrix.mat4.translate(robot_mesh.model, robot_mesh.model, glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
+				};
+				//console.log(dist);
+				gl.uniformMatrix4fv(unif['model'], false, robot_mesh.model);
+                var itM = glMatrix.mat4.create();
+                itM = glMatrix.mat4.invert(itM, robot_mesh.model);
+                itM = glMatrix.mat4.transpose(itM,itM);
+                gl.uniformMatrix4fv(unif['itmodel'],false,itM);
+
+                gl.activeTexture(gl.TEXTURE2);
+                gl.bindTexture(gl.TEXTURE_2D, tex_robot);
+                gl.uniform1i(u_tex_moon,2);
+
+                gl.activeTexture(gl.TEXTURE3);
+                gl.bindTexture(gl.TEXTURE_2D, bump_map_robot);
+                gl.uniform1i(u_bump_map,3);
+				
+				robot_mesh.draw();
 
 
-                //draw the sun
+
+            //// Sun ////
                 shader_sun.use();
                 sun_mesh.activate(shader_sun);
 
@@ -491,7 +551,7 @@
                 // set back the depth function for next frame
                 gl.depthFunc(gl.LESS);
                 //*/
-
+				prev_in_collision = in_collision;
                 fps(time);
                 window.requestAnimationFrame(animate); // While(True) loop!
             }
