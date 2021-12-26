@@ -48,3 +48,74 @@ function satellite_rot(model,rot_ang,rot_axis,origin,
 				
 				*/
 }
+
+function moveObjectKey(doc,model,y){
+	doc.addEventListener('keydown', (event) => {
+		  const key = event.key;
+		  
+		//<li>1. Add the functions to use the arrows and +/- to move in 3 directions</li>
+		// 1. Your Code
+		//Up Down Right Left
+		  if (key === '0') {
+		    // 1. Your code
+			//translation up to lower the view
+			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, y, 0.0));
+
+			return;
+		  }
+		   else if (key === '1') {
+		   //translate low to shift up the view
+		    glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -y, 0.0));
+			return;
+		  
+		}
+},false);
+}
+
+
+function checkCollisions(colliders_list,r_collider, other, r_other){
+	//contains all objects in collision
+	var in_collision = [];
+	
+	//for each pair of objects in colliders_list check if they collide
+	for(let j = 0; j < colliders_list.length; j++){
+	//position = last column 
+	//  /!\ here matrix 4x4 = vetor 1x16
+	let pos_j = glMatrix.vec3.fromValues(colliders_list[j][12],
+										 colliders_list[j][13],
+										 colliders_list[j][14]);
+	glMatrix.vec3.negate(pos_j,pos_j);
+	
+	for (let i = 0; i < colliders_list.length; i++){
+		if(colliders_list[i] != colliders_list[j]){
+		//position = last column 
+		//  /!\ here matrix 4x4 = vetor 1x16
+		let pos_i = glMatrix.vec3.fromValues(colliders_list[i][12],
+											 colliders_list[i][13],
+											 colliders_list[i][14]);
+													
+		//Create a vector with norm > 	r_collider+ r_other																	
+		let sub =glMatrix.vec3.fromValues(2*(r_collider+ r_other),1.0,0.0);
+		// sub = distance vector between objects
+		glMatrix.vec3.add( sub, pos_i,pos_j);
+		
+		// object other has a different radius must be taken into account 
+		// => 2 cases
+		if(colliders_list[j]== other || colliders_list[i]==other){
+			if (glMatrix.vec3.len(sub) < r_collider + r_other){
+				in_collision.push(colliders_list[j],colliders_list[i]);	
+
+		}}
+		else{
+			if (glMatrix.vec3.len(sub) < 2.0*r_collider ){
+				in_collision.push(colliders_list[j],colliders_list[i]);
+		}	
+	
+	}
+	}
+	}
+}
+
+	
+	return in_collision;
+}
