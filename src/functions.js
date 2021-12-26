@@ -60,13 +60,58 @@ function activateParticle(gl,shader, buffer){
 }
 
 class Particle {
-	//Note position and velocity should be glMatrix.vec2
+	//Note position and velocity should be glMatrix.vec3
 	//color should be a glMatrix.vec4
 	//life is a float
-	constructor(position, velocity, color, life){
+	constructor(position, velocity, orientation, color, life){
 		this.position = position;
 		this.velocity = velocity;
+		this.orientation = orientation;
 		this.color = color;
 		this.life = life;
+		this.size = 0.001;
+		this.category = Math.floor(Math.random()*1.5);
+	}
+
+	update_part(part_added, new_part){
+		this.life = this.life - 0.005;
+        if(this.life > 0.0){
+            this.position = glMatrix.vec3.scaleAndAdd(this.position,this.position,this.velocity,0.005);
+			//plus rouge et extérieur
+			if (this.category == 0){
+				this.color[1] = this.color[1] - 0.005 * 2.0
+            	this.color[2] = this.color[2] - 0.005 * 3.0
+			} 
+			//plus jaune et intérieur
+			else {
+				this.color[1] = this.color[1] - 0.005 * 0.5
+            	this.color[2] = this.color[2] - 0.005 * 2.0
+			}
+            
+			//this.color[3] = this.color[3] - 0.005 * 2.0
+            this.size = Math.min(this.life/900, 0.001) 
+			return false;
+        }
+        else{
+          if(part_added <= new_part){
+            //this.velocity = glMatrix.vec3.random(this.velocity,0.05);
+			if(this.category == 0){
+				this.life = Math.random()*2.0;
+				this.position = glMatrix.vec3.random(this.position,0.08);
+				this.velocity = glMatrix.vec3.fromValues(Math.random()*0.6 - 0.3,0.4,Math.random()*0.6 - 0.3);
+				this.color = glMatrix.vec4.fromValues(1.0,0.6,0.4,1.0);
+			}else{
+				this.life = Math.random()*0.8;
+				this.position = glMatrix.vec3.random(this.position,0.03);
+				this.velocity = glMatrix.vec3.fromValues(Math.random()*0.4 - 0.2,0.5,Math.random()*0.4 - 0.2);
+				this.color = glMatrix.vec4.fromValues(1.0,1.0,1.0,1.0);
+			}		
+            this.orientation = glMatrix.vec3.random(this.orientation,1.0);
+            
+            this.size = 0.001
+            return true;
+          }
+                    
+        }
 	}
 }
