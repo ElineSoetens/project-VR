@@ -115,8 +115,6 @@ function checkCollisions(colliders_list,r_collider, other, r_other){
 	}
 	}
 }
-
-	
 	return in_collision;
 }
 
