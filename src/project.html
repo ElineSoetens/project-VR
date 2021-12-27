@@ -250,36 +250,6 @@
       }
     `;
 
-    const source_particle_V = `
-      attribute vec3 vertex;
-
-      //varying vec2 v_texcoord;
-      varying vec4 v_particleColor;
-
-      uniform mat4 P;
-      uniform mat4 V;
-      uniform vec2 offset;
-      uniform vec4 color;
-
-      void main(){
-        //v_texcoord = vertex.zw;
-        v_particleColor = color;
-        gl_Position = P * V* vec4((vertex.xyz * 0.1) + vec3(offset,0.0), 1.0);
-      }
-    `;
-
-    const source_particle_F = `
-      precision mediump float;
-      //varying vec2 v_texcoord;
-      varying vec4 v_particleColor;
-
-      uniform sampler2D u_texture;
-      void main(){
-        //gl_FragColor = texture2D(u_texture, vec2(v_texcoord.x, 1.0-v_texcoord.y)) * v_particleColor ;
-        gl_FragColor = v_particleColor;
-      }
-    `;
-
             var shader_cubemap = make_shader(gl, sourceV, sourceF);
             // Shader for the cube
             var shader_effect = make_shader(gl, source_effect_V, source_effect_F);
@@ -289,9 +259,6 @@
 
             //Shader for the sun
             var shader_sun = make_shader(gl,source_sun_V,source_sun_F);
-
-            //Shader for the particle
-            var shader_particle = make_shader(gl,source_particle_V,source_particle_F);
 
             //texture for the planet, color and cubemap
             
@@ -305,11 +272,12 @@
 
             var tex_sun = make_texture(gl,"../textures/sun.jpg");
             const u_tex_sun = gl.getUniformLocation(shader_sun.program, 'u_texture');
+			
+            var tex_robot = make_texture(gl,"../textures/metal.jpg");
+			const u_tex_robot = gl.getUniformLocation(shader_planet.program, 'u_texture');
 
-            var tex_particle = make_texture(gl,"../textures/particle.jpg");
-            const u_sprite = gl.getUniformLocation(shader_particle.program, 'u_texture');
-
-            
+            var bump_map_robot = make_texture(gl,"../textures/metal_normal.jpg")
+            const u_bump_map_robot = gl.getUniformLocation(shader_planet.program, 'u_bumpmap');
             
             // 1) Load an object
             // loading the object from a file
@@ -332,16 +300,26 @@
             //Object Sun
             var sun = await load_obj('../objects/sphere_smooth.obj');
             var sun_mesh = await make_object(gl, sun);
+			
+			//Object Robot
+            var robot = await load_obj('../objects/sphere_smooth.obj');
+            var robot_mesh = await make_object(gl, robot);
 
-            // Let's move it a bit
-            obj_mesh.model = glMatrix.mat4.translate(obj_mesh.model,
-                                                        obj_mesh.model,
-                                                        glMatrix.vec3.fromValues(5.5, 0.0, 1.0));
-                                                       
-            
-            pl_mesh.model = glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
-            pl_mesh2.model = glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(-0.5,6.0,7.0));
-            //pl_mesh.model = glMatrix.mat4.rotate(pl_mesh.model,pl_mesh.model,1.5, glMatrix.vec3.fromValues(1.0,0.0,0.0)); 
+            // Let's move them a bit
+            //glMatrix.mat4.translate(obj_mesh.model,obj_mesh.model,glMatrix.vec3.fromValues(-0.5, 0.0, 1.0));
+            glMatrix.mat4.translate(obj_mesh.model,obj_mesh.model,glMatrix.vec3.fromValues(-0.5, 0.0, 20.0));
+            glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
+            //glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(-0.5,6.0,7.0));
+			glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
+            //glMatrix.mat4.rotate(pl_mesh.model,pl_mesh.model,1.5, glMatrix.vec3.fromValues(1.0,0.0,0.0)); 
+			
+
+
+			//glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model, glMatrix.vec3.fromValues(0.0,0.0,20.0));
+			moveObjectKey(document,robot_mesh.model,1.0);
+			
+			var colliders =[];
+			colliders.push(pl_mesh.model, pl_mesh2.model,robot_mesh.model);
 
 
             // We define a light in space and retrieve its ID in the shader
@@ -355,47 +333,8 @@
             //Translate position of the sun to coincide with light source position
             sun_mesh.model = glMatrix.mat4.translate(sun_mesh.model, sun_mesh.model, light_pos);
             //sun_mesh.model = glMatrix.mat4.translate(sun_mesh.model, sun_mesh.model, glMatrix.vec3.fromValues(-0.5,0.0,7.0));
-
-
-            //// Particle ////
-            //create the array
-            const particle_quad = new Float32Array([
-		           0.0, 1.0, 0.0, 
-		           0.0, 0.0, 0.0, 
-		           0.5, 0.87, 0.0, 
-
-               0.0, 1.0, 0.0, 
-		           0.5, 0.44, 1.0, 
-		           0.5, 0.87, 0.0,
-
-               0.0, 0.0, 0.0, 
-		           0.5, 0.44, 1.0, 
-		           0.0, 1.0, 0.0,
-
-               0.5, 0.87, 0.0, 
-		           0.5, 0.44, 1.0, 
-		           0.0, 0.0, 0.0,
-		          ]);
-
-            //binding the buffer
-            const buffer_particle = gl.createBuffer();
-		        gl.bindBuffer(gl.ARRAY_BUFFER, buffer_particle);
-		        gl.bufferData(gl.ARRAY_BUFFER, particle_quad, gl.STATIC_DRAW);
-		        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-            const u_P = gl.getUniformLocation(shader_particle.program,'P');
-            const u_V = gl.getUniformLocation(shader_particle.program,'V');
-            const u_offset = gl.getUniformLocation(shader_particle.program,'offset');
-            const u_color = gl.getUniformLocation(shader_particle.program,'color');
-
-            //creer une liste de particule (et un objet particule du coup)
-            //remplir avec genre 10 particules, chacune a une vitesse, durée de vie
-            var particle_list = []
-            var nr_part = 50;
-            for (var i = 0; i < nr_part; i = i +1){
-              particle_list.push(new Particle(glMatrix.vec2.fromValues(0.0,0.0),glMatrix.vec2.fromValues(0.0,1.0),glMatrix.vec4.fromValues(1.0,1.0,1.0,1.0),Math.random()));
-            }
-                        
+            
+            
             position = glMatrix.vec3.fromValues(0, 0, -4.0)
             up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0)
             yaw = -90.0
@@ -421,11 +360,15 @@
             // We need to send the camera position to the shader
             const u_view_dir = gl.getUniformLocation(shader_effect.program, 'u_view_dir');
 
-
             var deltaTime = 0;
-
+			var prev_in_collision = [];
+			var theta1 =0.01;
+			var theta2 =0.01;
+			
             function animate(time) {
                 deltaTime += 0.005;
+				var in_collision = checkCollisions(colliders,1.7, robot_mesh.model, 1.7);
+				console.log(pl_mesh.model == pl_mesh2.model);
                 camera.update(deltaTime);
                 //Draw loop
                 gl.clearColor(0.2, 0.2, 0.2, 1);
@@ -436,7 +379,7 @@
                 shader_effect.use();
                 obj_mesh.activate(shader_effect);
 
-                // 6) Write the code to draw the scene!
+                //// Bunny ////
                 var unif = shader_effect.get_uniforms();
 
                 view = camera.get_view_matrix();
@@ -457,15 +400,26 @@
                 gl.uniform1i(u_cubemap, 0);
 
                 obj_mesh.draw();
+				
 
-                //draw the planet
+             //// Planets  ////  
                 shader_planet.use();
+				
+				//// Planet 1 ////
                 pl_mesh.activate(shader_planet);
 
                 var unif = shader_planet.get_uniforms();
 
-                //// Planet Motion ////
-                satellite_rot(pl_mesh.model,0.05, glMatrix.vec3.fromValues(0.0,1.0,0.0),
+                // Planet Motion 
+				
+				
+				if (in_collision.includes(pl_mesh.model) 
+				&& prev_in_collision.includes(pl_mesh.model)== false
+				){
+					theta1 = -theta1
+				}
+				
+                satellite_rot(pl_mesh.model,theta1, glMatrix.vec3.fromValues(0.0,1.0,0.0),
                                   light_pos,glMatrix.vec3.fromValues(0.0,0.0,0.0),
                                   glMatrix.vec3.fromValues(1.0,1.0,1.0))
 
@@ -490,31 +444,62 @@
                 gl.uniform1i(u_bump_map,1);
 
                 pl_mesh.draw();
+				
+				
+				//// Planet 2 ////
+               // pl_mesh2.activate(shader_planet);
 
-                pl_mesh2.activate(shader_planet);
-
-                //// Planet Motion ////
-                satellite_rot(pl_mesh2.model,0.05, glMatrix.vec3.fromValues(-1.0,1.0,0.0),
+                // Planet Motion 
+				if (in_collision.includes(pl_mesh2.model) 
+				&& prev_in_collision.includes(pl_mesh2.model)== false){
+					theta2 = -theta2
+				}
+                satellite_rot(pl_mesh2.model,theta2, glMatrix.vec3.fromValues(-1.0,1.0,0.0),
                                   light_pos,glMatrix.vec3.fromValues(0.0,0.0,0.0),
                                   glMatrix.vec3.fromValues(1.0,1.0,1.0))
+				
                 gl.uniformMatrix4fv(unif['model'], false, pl_mesh2.model);
                 var itM = glMatrix.mat4.create();
-                itM = glMatrix.mat4.invert(itM, pl_mesh.model);
+                itM = glMatrix.mat4.invert(itM, pl_mesh2.model);
                 itM = glMatrix.mat4.transpose(itM,itM);
                 gl.uniformMatrix4fv(unif['itmodel'],false,itM);
-
-                gl.activeTexture(gl.TEXTURE0);
+				
+				// Don't need to activate once it is activated
+                /*gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, tex_planet);
                 gl.uniform1i(u_tex_moon,0);
 
                 gl.activeTexture(gl.TEXTURE1);
                 gl.bindTexture(gl.TEXTURE_2D, bump_map);
                 gl.uniform1i(u_bump_map,1);
-
+*/
                 pl_mesh2.draw();
+				
+				//// Robot ////
+				//robot_mesh.activate(shader_planet);
+				if(in_collision.includes(robot_mesh.model)){
+					glMatrix.mat4.translate(robot_mesh.model, robot_mesh.model, glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
+				};
+				//console.log(dist);
+				gl.uniformMatrix4fv(unif['model'], false, robot_mesh.model);
+                var itM = glMatrix.mat4.create();
+                itM = glMatrix.mat4.invert(itM, robot_mesh.model);
+                itM = glMatrix.mat4.transpose(itM,itM);
+                gl.uniformMatrix4fv(unif['itmodel'],false,itM);
+
+                gl.activeTexture(gl.TEXTURE2);
+                gl.bindTexture(gl.TEXTURE_2D, tex_robot);
+                gl.uniform1i(u_tex_moon,2);
+
+                gl.activeTexture(gl.TEXTURE3);
+                gl.bindTexture(gl.TEXTURE_2D, bump_map_robot);
+                gl.uniform1i(u_bump_map,3);
+				
+				robot_mesh.draw();
 
 
-                //draw the sun
+
+            //// Sun ////
                 shader_sun.use();
                 sun_mesh.activate(shader_sun);
 
@@ -537,51 +522,6 @@
 
                 sun_mesh.draw();
 
-                //parcourir la liste de particule et 
-                //updater la liste de particule
-                var new_part = 2;
-                var part_added = 0;
-                for (i in particle_list){
-                  particle_list[i].life = particle_list[i].life - 0.005;
-                  if(particle_list[i].life > 0.0){
-                    particle_list[i].position = glMatrix.vec2.scaleAndAdd(particle_list[i].position,particle_list[i].position,particle_list[i].velocity,0.005);
-                    //particle_list[i].color[3] = particle_list[i].color[3] - 0.005 * 2.5
-                    particle_list[i].color[1] = particle_list[i].color[1] - 0.005 * 1.0
-                    particle_list[i].color[2] = particle_list[i].color[2] - 0.005 * 1.0
-                  }
-                  else{
-                    if(part_added <= new_part){
-                      particle_list[i].life = Math.random()*2.0;
-                      particle_list[i].position = glMatrix.vec2.random(particle_list[i].position,0.1);
-                      particle_list[i].velocity = glMatrix.vec2.random(particle_list[i].velocity,0.5);
-                      particle_list[i].color = glMatrix.vec4.fromValues(1.0,1.0,1.0,1.0);
-                      part_added = part_added + 1;
-                    }
-                    
-                  }
-                }
-                //pour chaque particule la dessiner
-                shader_particle.use()
-                for (i in particle_list){
-                  if(particle_list[i].life > 0.0){
-                    activateParticle(gl,shader_particle,buffer_particle);
-                    gl.uniformMatrix4fv(u_P, false, projection);
-                    gl.uniformMatrix4fv(u_V, false, view);
-                    //console.log(particle_list[i].color);
-                    //console.log()
-                    gl.uniform4fv(u_color, particle_list[i].color);
-                    gl.uniform2fv(u_offset, particle_list[i].position);
-                    
-
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, tex_particle);
-                    gl.uniform1i(u_sprite, 0);
-
-                    gl.drawArrays(gl.TRIANGLES, 0, 12);
-
-                  }
-                }
-                
                 
 
 
@@ -611,7 +551,7 @@
                 // set back the depth function for next frame
                 gl.depthFunc(gl.LESS);
                 //*/
-
+				prev_in_collision = in_collision;
                 fps(time);
                 window.requestAnimationFrame(animate); // While(True) loop!
             }
