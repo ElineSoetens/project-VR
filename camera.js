@@ -13,6 +13,11 @@ var make_camera = function(canvas, position, up, yaw, pitch) {
     var right = glMatrix.vec3.create();
     var world_up = up;
 
+    //vector needed for the reflection
+    var front_mirror = glMatrix.vec3.create();
+    var right_mirror = glMatrix.vec3.create();
+    var up_mirror = glMatrix.vec3.create();
+
     // Euler angles
     var yaw = 90.0;
     var pitch = 0.0;
@@ -104,6 +109,32 @@ var make_camera = function(canvas, position, up, yaw, pitch) {
         View = glMatrix.mat4.create();
         View = glMatrix.mat4.lookAt(View, position, center, up);
         return View;
+    }
+
+    function get_reflection_matrix(norm_mirror,position_mirror) {
+        //create the front for the mirror
+        l = glMatrix.vec3.create();
+        glMatrix.vec3.negate(l,front);
+        l_dot_norm = glMatrix.vec3.dot(l,norm_mirror);
+        
+        front_mirror = glMatrix.vec3.scale(front_mirror,norm_mirror,2*l_dot_norm);
+        front_mirror = glMatrix.vec3.subtract(front_mirror,front_mirror,l);
+        front_mirror = glMatrix.vec3.normalize(front_mirror,front_mirror);
+
+        // recompute right, up
+        
+        right_mirror = glMatrix.vec3.cross(right_mirror, front_mirror, world_up);
+        right_mirror = glMatrix.vec3.normalize(right_mirror, right_mirror);
+
+        up_mirror = glMatrix.vec3.cross(up_mirror, right_mirror, front_mirror);
+        up_mirror = glMatrix.vec3.normalize(up_mirror, up_mirror);
+
+        center_mirror = glMatrix.vec3.create();
+        center_mirror = glMatrix.vec3.add(center_mirror, position_mirror, front_mirror);
+        Reflec = glMatrix.mat4.create();
+        Reflec = glMatrix.mat4.lookAt(Reflec,position_mirror,center_mirror,up_mirror);
+        return Reflec
+
     }
     
     function get_projection(fov = 45.0, ratio = 1.0, near = 0.01, far = 100.0) {
@@ -225,6 +256,7 @@ var make_camera = function(canvas, position, up, yaw, pitch) {
     return {
         update: update,
         get_view_matrix: get_view_matrix,
+        get_reflection_matrix: get_reflection_matrix,
         get_projection: get_projection,
         get_position: get_position,
         show_projection_html: show_projection_html,

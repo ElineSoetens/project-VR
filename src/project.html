@@ -273,6 +273,37 @@
       }
     `;
 
+    const source_mirror_V =`
+      attribute vec3 position;
+      attribute vec2 texcoord;
+      attribute vec3 normal;
+      attribute vec3 tangent;
+      attribute vec3 bitangent;
+
+      varying vec2 v_texcoord;
+
+      uniform mat4 M;
+      uniform mat4 V;
+      uniform mat4 P;
+      void main(){
+        gl_Position = P*V*M*vec4(position, 1.0);
+
+        v_texcoord = texcoord;
+      }
+    `;
+
+    const source_mirror_F = `
+      precision mediump float;
+
+      varying vec2 v_texcoord;
+
+      uniform sampler2D u_texture;
+
+      void main(){
+        gl_FragColor = texture2D(u_texture, vec2(v_texcoord.x, 1.0-v_texcoord.y));
+      }
+    `;
+
             var shader_cubemap = make_shader(gl, sourceV, sourceF);
             // Shader for the cube
             var shader_effect = make_shader(gl, source_effect_V, source_effect_F);
@@ -285,6 +316,9 @@
 
             //Shader for the particle
             var shader_particle = make_shader(gl,source_particle_V,source_particle_F);
+
+            //Shader for the mirror
+            var shader_mirror = make_shader(gl, source_mirror_V, source_mirror_F);
 
             //texture for the planet, color and cubemap
             
@@ -337,6 +371,12 @@
 
             const u_color = gl.getUniformLocation(shader_particle.program,'color');
 
+            var mirror = await load_obj('../objects/plane.obj');
+            var mirror_mesh = await make_object(gl, mirror);
+            var mirror_norm = glMatrix.vec3.fromValues(0.0,1.0,0.0);
+            const u_tex_mirror = gl.getUniformLocation(shader_mirror.program,'u_texture');
+            
+
             
             
 
@@ -348,6 +388,15 @@
 			      glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
             //glMatrix.mat4.rotate(pl_mesh.model,pl_mesh.model,1.5, glMatrix.vec3.fromValues(1.0,0.0,0.0)); 
             glMatrix.mat4.translate(part_mesh.model,part_mesh.model,glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
+
+            //Move the mirror
+            glMatrix.mat4.translate(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(1.0, -2.5, 0.0))
+            var mirror_position = glMatrix.vec3.fromValues(mirror_mesh.model[12],
+                                                         mirror_mesh.model[13],
+                                                         mirror_mesh.model[14],);
+            glMatrix.mat4.rotateZ(mirror_mesh.model,mirror_mesh.model,1.5);
+            glMatrix.vec3.rotateZ(mirror_norm,mirror_norm,mirror_position,1.5);
+            glMatrix.mat4.scale(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(2.0,2.0,2.0));
 			
 
 
@@ -408,6 +457,51 @@
             // We need to send the camera position to the shader
             const u_view_dir = gl.getUniformLocation(shader_effect.program, 'u_view_dir');
 
+            //// Frame Buffer ////
+
+            //Val of the code :
+            console.log("gl.FRAMEBUFFER_COMPLETE :",gl.FRAMEBUFFER_COMPLETE);
+            console.log("gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT :",gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
+            console.log("gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT :",gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
+            console.log("gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS :", gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS);
+            console.log("gl.FRAMEBUFFER_UNSUPPORTED :",gl.FRAMEBUFFER_UNSUPPORTED);
+
+            console.log("canvas status:",gl.checkFramebufferStatus(gl.FRAMEBUFFER));
+
+            var fbo = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+
+            //generate texture to attach to fbo
+            textureColorebuffer = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, textureColorebuffer);
+            gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,c_width,c_height,0,gl.RGBA,gl.UNSIGNED_BYTE, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,textureColorebuffer,0);
+
+            //generate renderbuffer for the depth (and stencil ?)
+            var rbo = gl.createRenderbuffer();
+            gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
+            gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_STENCIL,c_width,c_height);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_STENCIL_ATTACHMENT,gl.RENDERBUFFER,rbo);
+
+            gl.enable(gl.DEPTH_TEST);
+
+            console.log("fbo :",gl.checkFramebufferStatus(gl.FRAMEBUFFER));
+            console.log("parameter",gl.getParameter(gl.FRAMEBUFFER_BINDING));
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+            console.log("canvas :",gl.checkFramebufferStatus(gl.FRAMEBUFFER));
+            console.log("parameter",gl.getParameter(gl.FRAMEBUFFER_BINDING));
+            
+            //gl.deleteFramebuffer(fbo);
+
             var deltaTime = 0;
 			var prev_in_collision = [];
 			var theta1 =0.01;
@@ -417,14 +511,27 @@
 			
             function animate(time) {
                 deltaTime += 0.005;
-				var in_collision = checkCollisions(colliders,1.7, robot_mesh.model, 1.0);
-				console.log(pl_mesh.model == pl_mesh2.model);
+				        var in_collision = checkCollisions(colliders,1.7, robot_mesh.model, 1.0);
+				        //console.log(pl_mesh.model == pl_mesh2.model);
                 camera.update(deltaTime);
                 //Draw loop
+                
+                
                 gl.clearColor(0.2, 0.2, 0.2, 1);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+                //Repete process for the fbo
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                //gl.viewport(0,0,1,1);
+                
+                gl.clearColor(1.0, 0.6, 0.6, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                
 
+              //get info about the mirror to generate the matrix for the reflection
+              
+                reflec = camera.get_reflection_matrix(mirror_norm, mirror_position);
                 // draw our scene
                 shader_effect.use();
                 obj_mesh.activate(shader_effect);
@@ -433,6 +540,9 @@
                 var unif = shader_effect.get_uniforms();
 
                 view = camera.get_view_matrix();
+                //here i guess i should make a function of camera to have the view for
+                //the reflection
+
                 gl.uniformMatrix4fv(unif['model'], false, obj_mesh.model);
                 gl.uniformMatrix4fv(unif['view'], false, view);
                 gl.uniformMatrix4fv(unif['proj'], false, projection);
@@ -450,6 +560,11 @@
                 gl.uniform1i(u_cubemap, 0);
 
                 obj_mesh.draw();
+
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                gl.uniformMatrix4fv(unif['view'], false, reflec);
+                obj_mesh.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 				
 
              //// Planets  ////  
@@ -494,6 +609,14 @@
                 gl.uniform1i(u_bump_map,1);
 
                 pl_mesh.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                gl.uniformMatrix4fv(unif['view'], false, reflec);
+                pl_mesh.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+                /*gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                pl_mesh.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);*/
 				
 				//// Planet 2 ////
                // pl_mesh2.activate(shader_planet);
@@ -508,6 +631,7 @@
                                   glMatrix.vec3.fromValues(1.0,1.0,1.0))
 				
                 gl.uniformMatrix4fv(unif['model'], false, pl_mesh2.model);
+                gl.uniformMatrix4fv(unif['view'], false, view);
                 var itM = glMatrix.mat4.create();
                 itM = glMatrix.mat4.invert(itM, pl_mesh2.model);
                 itM = glMatrix.mat4.transpose(itM,itM);
@@ -523,6 +647,10 @@
                 gl.uniform1i(u_bump_map,1);
 */
                 pl_mesh2.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                gl.uniformMatrix4fv(unif['view'], false, reflec);
+                pl_mesh2.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
                 
 				
@@ -536,6 +664,7 @@
           start_fire = deltaTime;
 				};
 				//console.log(dist);
+        gl.uniformMatrix4fv(unif['view'], false, view);
 				gl.uniformMatrix4fv(unif['model'], false, robot_mesh.model);
                 var itM = glMatrix.mat4.create();
                 itM = glMatrix.mat4.invert(itM, robot_mesh.model);
@@ -551,9 +680,14 @@
                 gl.bindTexture(gl.TEXTURE_2D, bump_map_robot);
                 gl.uniform1i(u_bump_map,3);
 				
-				robot_mesh.draw();
+				        robot_mesh.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                gl.uniformMatrix4fv(unif['view'], false, reflec);
+                robot_mesh.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-        
+
+            
 
 
             //// Sun ////
@@ -578,6 +712,12 @@
                 gl.uniform1i(u_tex_sun,0);
 
                 sun_mesh.draw();
+
+                //// draw in other buffer
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                gl.uniformMatrix4fv(unif['view'], false, reflec);
+                sun_mesh.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
                 
             //// Particle ////
@@ -618,8 +758,56 @@
               }
               else if (fire === true){
                 fire = false;
-              }  
+              } 
+              
 
+              
+              
+              //// Mirror ////
+              //draw the cube map for the mirror:
+              gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                gl.depthFunc(gl.LEQUAL);
+
+                shader_cubemap.use();
+                cube_mesh.activate(shader_cubemap);
+
+                var unif = shader_cubemap.get_uniforms();
+
+                view = camera.get_view_matrix();
+                gl.uniformMatrix4fv(unif['model'], false, cube_mesh.model);
+                gl.uniformMatrix4fv(unif['view'], false, reflec);
+                gl.uniformMatrix4fv(unif['proj'], false, projection);
+                
+                // Activate the texture for the cube
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, texCube);
+                gl.uniform1i(u_cubemap, 0);
+                camera.show_view_html(camMatElem, camera.get_view_matrix());
+                cube_mesh.draw();
+
+                // set back the depth function for next frame
+                gl.depthFunc(gl.LESS);
+              gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+              //draw the mirror in the canvas
+            shader_mirror.use()
+              mirror_mesh.activate(shader_mirror);
+
+              var unif = shader_mirror.get_uniforms();
+
+              view = camera.get_view_matrix();
+              gl.uniformMatrix4fv(unif['model'], false, mirror_mesh.model);
+              gl.uniformMatrix4fv(unif['view'], false, view);
+              gl.uniformMatrix4fv(unif['proj'], false, projection);
+
+              gl.activeTexture(gl.TEXTURE0);
+              gl.bindTexture(gl.TEXTURE_2D, textureColorebuffer);
+              gl.uniform1i(u_tex_mirror,0);
+
+              mirror_mesh.draw();
+
+
+              //// CubeMap ////
 
                 //*    // uncomment only one slash "/" to comment the cubemap ;)
                 // We draw the cubemap ONLY at the end!
