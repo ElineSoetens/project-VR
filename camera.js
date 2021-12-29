@@ -116,6 +116,11 @@ var make_camera = function(canvas, position, up, yaw, pitch) {
         l = glMatrix.vec3.create();
         glMatrix.vec3.negate(l,front);
         l_dot_norm = glMatrix.vec3.dot(l,norm_mirror);
+
+        if(l_dot_norm < 0.0){
+            norm_mirror = glMatrix.vec3.negate(norm_mirror,norm_mirror);
+            l_dot_norm = glMatrix.vec3.dot(l,norm_mirror);
+        }
         
         front_mirror = glMatrix.vec3.scale(front_mirror,norm_mirror,2*l_dot_norm);
         front_mirror = glMatrix.vec3.subtract(front_mirror,front_mirror,l);
@@ -124,15 +129,17 @@ var make_camera = function(canvas, position, up, yaw, pitch) {
         // recompute right, up
         
         right_mirror = glMatrix.vec3.cross(right_mirror, front_mirror, world_up);
+        //right_mirror = glMatrix.vec3.cross(right_mirror, world_up, front_mirror);
         right_mirror = glMatrix.vec3.normalize(right_mirror, right_mirror);
 
         up_mirror = glMatrix.vec3.cross(up_mirror, right_mirror, front_mirror);
+        //up_mirror = glMatrix.vec3.cross(up_mirror, front_mirror, right_mirror);
         up_mirror = glMatrix.vec3.normalize(up_mirror, up_mirror);
 
         center_mirror = glMatrix.vec3.create();
         center_mirror = glMatrix.vec3.add(center_mirror, position_mirror, front_mirror);
         Reflec = glMatrix.mat4.create();
-        Reflec = glMatrix.mat4.lookAt(Reflec,position_mirror,center_mirror,up_mirror);
+        Reflec = glMatrix.mat4.lookAt(Reflec,position_mirror,center_mirror,right_mirror);
         return Reflec
 
     }

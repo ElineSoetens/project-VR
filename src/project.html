@@ -281,14 +281,20 @@
       attribute vec3 bitangent;
 
       varying vec2 v_texcoord;
+      varying vec3 v_normal;
 
       uniform mat4 M;
       uniform mat4 V;
       uniform mat4 P;
+      uniform mat4 itM;
+
+
       void main(){
         gl_Position = P*V*M*vec4(position, 1.0);
 
         v_texcoord = texcoord;
+        v_normal = vec3(itM * vec4(normal, 1.0));
+        v_normal = normalize(v_normal);
       }
     `;
 
@@ -296,11 +302,16 @@
       precision mediump float;
 
       varying vec2 v_texcoord;
+      varying vec3 v_normal;
+
+      uniform vec3 n;
 
       uniform sampler2D u_texture;
 
       void main(){
-        gl_FragColor = texture2D(u_texture, vec2(v_texcoord.x, 1.0-v_texcoord.y));
+        gl_FragColor = texture2D(u_texture, vec2(v_texcoord.x, v_texcoord.y));
+        //gl_FragColor = vec4(v_normal,1.0);
+        //gl_FragColor = vec4(n,1.0);
       }
     `;
 
@@ -390,13 +401,24 @@
             glMatrix.mat4.translate(part_mesh.model,part_mesh.model,glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
 
             //Move the mirror
-            glMatrix.mat4.translate(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(1.0, -2.5, 0.0))
+            glMatrix.mat4.translate(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(6.0, -2.5, 0.0))
+            //glMatrix.mat4.rotate(mirror_mesh.model,mirror_mesh.model,1.5708, glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
+            
+            glMatrix.mat4.rotate(mirror_mesh.model,mirror_mesh.model,-1.5708, glMatrix.vec3.fromValues(0.0, 0.0, 1.0));
+            //glMatrix.vec3.rotateZ(mirror_norm,mirror_norm,mirror_position,1.5);
+
+            glMatrix.mat4.scale(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(4.0,4.0,4.0));
+
+            var itM = glMatrix.mat4.create();
+            itM = glMatrix.mat4.invert(itM, mirror_mesh.model);
+            itM = glMatrix.mat4.transpose(itM, itM);
+
+            glMatrix.vec3.transformMat4(mirror_norm,mirror_norm,itM);
+            glMatrix.vec3.normalize(mirror_norm,mirror_norm);
+            console.log(mirror_norm);
             var mirror_position = glMatrix.vec3.fromValues(mirror_mesh.model[12],
                                                          mirror_mesh.model[13],
                                                          mirror_mesh.model[14],);
-            glMatrix.mat4.rotateZ(mirror_mesh.model,mirror_mesh.model,1.5);
-            glMatrix.vec3.rotateZ(mirror_norm,mirror_norm,mirror_position,1.5);
-            glMatrix.mat4.scale(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(2.0,2.0,2.0));
 			
 
 
@@ -447,6 +469,7 @@
             // Retrieve the adress of the cubemap texture
             // 5) Code for creating the cubemap
             var texCube = make_texture_cubemap(gl, '../textures/cubemaps/lightblue');
+            //var texCube = make_texture_cubemap(gl, '../textures/cubemaps/Yokohama');
             const u_cubemap = gl.getUniformLocation(shader_cubemap.program, 'u_cubemap');
             
             // 4) Define all the variables you will need to perform the computations
@@ -749,8 +772,13 @@
                     gl.uniformMatrix4fv(unif['model'], false, model_part);
 
                     gl.uniform4fv(u_color, particle_list[i].color);
-                    
+                    gl.uniformMatrix4fv(unif['view'], false, view);
                     part_mesh.draw();
+
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                    gl.uniformMatrix4fv(unif['view'], false, reflec);
+                    part_mesh.draw()
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
                   }
                 }
@@ -793,12 +821,21 @@
             shader_mirror.use()
               mirror_mesh.activate(shader_mirror);
 
+              const u_n = gl.getUniformLocation(shader_mirror.program,"n");
+
               var unif = shader_mirror.get_uniforms();
 
               view = camera.get_view_matrix();
               gl.uniformMatrix4fv(unif['model'], false, mirror_mesh.model);
               gl.uniformMatrix4fv(unif['view'], false, view);
               gl.uniformMatrix4fv(unif['proj'], false, projection);
+              var itM = glMatrix.mat4.create();
+              itM = glMatrix.mat4.invert(itM, mirror_mesh.model);
+              itM = glMatrix.mat4.transpose(itM,itM);
+              gl.uniformMatrix4fv(unif['itmodel'],false,itM);
+
+              gl.uniform3fv(u_n,mirror_norm);
+              
 
               gl.activeTexture(gl.TEXTURE0);
               gl.bindTexture(gl.TEXTURE_2D, textureColorebuffer);
