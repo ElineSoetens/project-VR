@@ -1,7 +1,6 @@
-function satellite_rot(model,rot_ang,rot_axis,origin,
-			           translation,scaling){
+function satellite_rot(model,rot_ang,rot_axis,origin,translation,scaling){
 
-				//Create quaternion 
+				//Create quaternion from angle and axis
 				let rot_quat = glMatrix.quat.create(); 
 				glMatrix.quat.setAxisAngle(rot_quat, rot_axis, rot_ang); 
 				 
@@ -13,40 +12,6 @@ function satellite_rot(model,rot_ang,rot_axis,origin,
 				//Apply rotation 
 				glMatrix.mat4.multiply(model,rot,model); 
 				
-				
-				/*//invert rotation matrix  
-				var rot_inv = glMatrix.mat4.create(); 
-				glMatrix.mat4.invert(rot_inv,rot); 
-				//Can be nice effect around origin = (0,0,0) but else uncontrollable
-				//glMatrix.mat4.multiply(pl_mesh.model,glMatrix.mat4.multiply(pl_mesh.model,rot,pl_mesh.model),rot_inv);
-				
-				*/
-				/*
-				// // Rodrigues hardcode around 0,1,0 //
-				
-				//Create quaternion
-				var theta = 0.05;//deltaTime/5.0 %(2.0*Math.PI);
-				var s = Math.cos(theta/2.0);
-				var x = Math.sin(theta/2.0)*0.0; //
-				var y = Math.sin(theta/2.0)*1.0;
-				var z = Math.sin(theta/2.0)*0.0;
-				
-				//Create rotation matrix from quaternion
-				var rot = glMatrix.mat4.fromValues
-				(1.0-2.0*y*y-2.0*z*z, 2.0*x*y-2.0*s*z,2.0*x*z+2.0*s*y, 0.0,
-				2.0*x*y+2.0*s*z,1.0-2.0*x*x-2.0*z*z, 2.0*y*z-2.0*s*x,0.0,
-				2.0*x*z-2.0*s*y, 2.0*y*z+2.0*s*x, 1.0-2.0*x*x-2.0*y*y,0.0,
-				0.0,0.0,0.0,1.0);
-				
-				//Invert it
-				var rot_inv = glMatrix.mat4.create();
-				glMatrix.mat4.invert(rot_inv,rot);
-				
-				//Rotate
-				//glMatrix.mat4.multiply(pl_mesh.model,glMatrix.mat4.multiply(pl_mesh.model,rot,pl_mesh.model),rot_inv);
-				//glMatrix.mat4.multiply(pl_mesh.model,rot,pl_mesh.model);
-				
-				*/
 }
 
 function moveObjectKey(doc,model,y,keys){
@@ -69,12 +34,12 @@ function moveObjectKey(doc,model,y,keys){
 			return;
 
 		}
-		else if ( key === 'k') {
+		else if ( key === 'm') {
 		//translate low to shift up the view
 		 glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-y, 0.0, 0.0));
 		 return;
  
-		} else if (key === 'm') {
+		} else if (key === 'k') {
 			//translate low to shift up the view
 			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(y, 0.0, 0.0));
 			return;
@@ -95,75 +60,84 @@ function moveObjectKey(doc,model,y,keys){
 }
 
 
-function checkCollisions(colliders_list,r_collider, other, r_other){
+function checkCollisions(colliders_list,r_collider, others, r_other){
 	//contains all objects in collision
+	//if two spheres have are separated by a distance < their radius they are added
 	var in_collision = [];
 	
 	//for each pair of objects in colliders_list check if they collide
 	for(let j = 0; j < colliders_list.length; j++){
-		//initialize at high value in case you have a hitbox
+		//initialize at high value in case you have a hitbox (this value allows to not care about it)
 		var pos_j = glMatrix.vec3.fromValues(100*(r_collider+ r_other),1.0,0.0);
-		
+		//hitbox has size < 16
 		if (colliders_list[j].length < 16 == false){
 		//position = last column 
 		//  /!\ here matrix 4x4 = vetor 1x16
 			pos_j = glMatrix.vec3.fromValues(colliders_list[j][12],
-											colliders_list[j][13],
-											colliders_list[j][14]);
+											 colliders_list[j][13],
+											 colliders_list[j][14]);
 			glMatrix.vec3.negate(pos_j,pos_j);
 		}
 		
-	
-	for (let i = 0; i < colliders_list.length; i++){
-		if(i != j){
-		if (colliders_list[i].length < 16){
-			for(let k = 0; k < colliders_list[i][0].length; k++){
-				let pos_k = glMatrix.vec3.fromValues(colliders_list[i][0][k][12],
-													 colliders_list[i][0][k][13],
-													 colliders_list[i][0][k][14]);
-				let sub =glMatrix.vec3.fromValues(2*(r_collider+ r_other),1.0,0.0);
-				// sub = distance vector between objects
-				glMatrix.vec3.add( sub, pos_k,pos_j);
-				if(colliders_list[j]== other ){
-					if (glMatrix.vec3.len(sub) < r_other + colliders_list[i][1][k]){
-					in_collision.push(colliders_list[j],colliders_list[i][2]);	
-				}
-				}
-				else{
-				if (glMatrix.vec3.len(sub) < r_collider + colliders_list[i][1][k]){
-					in_collision.push(colliders_list[j],colliders_list[i][2]);	
-				}
-			}
-		}
-		}
-		else{
-			//position = last column 
-			//  /!\ here matrix 4x4 = vetor 1x16
-			let pos_i = glMatrix.vec3.fromValues(colliders_list[i][12],
-												colliders_list[i][13],
-												colliders_list[i][14]);
-														
-			//Create a vector with norm > 	r_collider+ r_other																	
-			let sub =glMatrix.vec3.fromValues(2*(r_collider+ r_other),1.0,0.0);
-			// sub = distance vector between objects
-			glMatrix.vec3.add( sub, pos_i,pos_j);
-			
-			// object other has a different radius must be taken into account 
-			// => 2 cases
-			if(colliders_list[j]== other || colliders_list[i]==other){
-				if (glMatrix.vec3.len(sub) < r_collider + r_other){
-					in_collision.push(colliders_list[j],colliders_list[i]);	
+		//Second loop to check for the pairs in collision
+		for (let i = 0; i < colliders_list.length; i++){
+			//Every object collides with itself don't take into account
+			if(i != j){
+			//If hitbox check for each sphere of the hitbox if collision	
+			if (colliders_list[i].length < 16){
+				for(let k = 0; k < colliders_list[i][0].length; k++){
+					//hitbox is the first element in the list
+					let pos_k = glMatrix.vec3.fromValues(colliders_list[i][0][k][12],
+														colliders_list[i][0][k][13],
+														colliders_list[i][0][k][14]);
+					let sub =glMatrix.vec3.create();
+					// sub = distance vector between objects
+					glMatrix.vec3.add( sub, pos_k,pos_j);
+					if(others.includes(colliders_list[j]) ){
+						if (glMatrix.vec3.len(sub) < r_other + colliders_list[i][1][k]){
+						in_collision.push(colliders_list[j],colliders_list[i][2]);	
+						}
+					}
+					else{
+					if (glMatrix.vec3.len(sub) < r_collider + colliders_list[i][1][k]){
+						in_collision.push(colliders_list[j],colliders_list[i][2]);	
+						}
+					}
 				}
 			}
 			else{
-				if (glMatrix.vec3.len(sub) < 2.0*r_collider ){
-					in_collision.push(colliders_list[j],colliders_list[i]);
+				//position = last column 
+				//  /!\ here matrix 4x4 = vetor 1x16
+				let pos_i = glMatrix.vec3.fromValues(colliders_list[i][12],
+													colliders_list[i][13],
+													colliders_list[i][14]);
+															
+				//Create a vector with norm > 	r_collider+ r_other																	
+				let sub =glMatrix.vec3.create();
+				// sub = distance vector between objects
+				glMatrix.vec3.add( sub, pos_i,pos_j);
+				
+				// object other has a different radius must be taken into account 
+				// => 3 cases
+				if(others.includes(colliders_list[j]) && others.includes(colliders_list[i])){
+					if (glMatrix.vec3.len(sub) < 2.0* r_other){
+						in_collision.push(colliders_list[j],colliders_list[i]);	
+					}
 				}
-			}
-		}		
-	
-	}
-	}
+				else if(others.includes(colliders_list[j]) || others.includes(colliders_list[i])){
+					if (glMatrix.vec3.len(sub) < r_collider + r_other){
+						in_collision.push(colliders_list[j],colliders_list[i]);	
+					}
+				}
+				else{
+					if (glMatrix.vec3.len(sub) < 2.0*r_collider ){
+						in_collision.push(colliders_list[j],colliders_list[i]);
+					}
+				}
+			}		
+		
+		}
+		}
 	}
 
 	return in_collision;
@@ -230,22 +204,28 @@ class Particle {
 async function makeHitbox(object_model, relative_positions, scalings,context){
 	var hitbox = []
 	var hitbox_models = [];
+	//load the sphere
 	var sphere = await load_obj('../objects/sphere_smooth.obj');
+	//each relative position matches a sphere => make one per position
 	for (let i = 0; i < relative_positions.length; i++){
         let s1_mesh = await make_object(context, sphere);
+		//sphere position = object position + relative position
 		s1_mesh.model[12] = object_model[12]+ relative_positions[i][0];
 		s1_mesh.model[13] = object_model[13]+ relative_positions[i][1];
 		s1_mesh.model[14] = object_model[14]+ relative_positions[i][2];
+		//scale the sphere 
 		glMatrix.mat4.scale(s1_mesh.model,s1_mesh.model,glMatrix.vec3.fromValues(scalings[i],scalings[i],scalings[i]));									
 		hitbox_models.push(s1_mesh.model);
 	}
 		hitbox.push(hitbox_models,scalings,object_model);
+		//having the scalings allow a quick acces to the sphere radius 
 return hitbox;
 	
 
 }
 
 function updateHitbox(hitbox,relative_positions){
+	//moves the hitbox according to its object
 	for (let i = 0; i < hitbox[0].length; i++){
 		hitbox[0][i][12] =hitbox[2][12]+ relative_positions[i][0];
 	    hitbox[0][i][13] =hitbox[2][13]+ relative_positions[i][1];

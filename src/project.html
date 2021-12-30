@@ -5,12 +5,12 @@
 </head>
 <body>
     <h1>Space Dream</h1>
-    <p> Move the robot into the space dream avoiding the satellites. If you get hit the robot will be on fire !</p>
+    <p> Move the robot into the space dream avoiding the satellites. If you get hit the robot will be on fire ! The mirror on the left can help you.</p>
     <ul> Controls:  <li>Move the camera orientation with the arrows </li>
 					<li>Move the camera position with q(left) d(right) z(zoom in) s(zoom out)</li>
-					<li>Move the robot with 0(up) and 1(down) or o(up) and l(down)</li>
+					<li>Move the robot with k(left) and m(right) or o(up) and l(down) i(out) p(in)</li>
     </ul>
-    <canvas id="webgl_canvas" width="1500" height="600"></canvas>
+    <canvas id="webgl_canvas" width="1500" height="650"></canvas>
     <div id="fps"></div>
     <div id="camera_mat"></div>
     <div id="proj_mat"></div>
@@ -25,7 +25,7 @@
 async function main() {
 	// Boilerplate code
 	const canvas = document.getElementById('webgl_canvas');
-	document.body.style.zoom="75%"
+	document.body.style.zoom="73%"
 	c_width = canvas.width
 	c_height = canvas.height
 	const gl = canvas.getContext('webgl');
@@ -483,7 +483,7 @@ async function main() {
 
 //// Colliders	////	
 	var colliders =[];
-	colliders.push(pl_mesh.model, pl_mesh2.model,robot_mesh.model,bunny_hitbox,refract_mesh);
+	colliders.push(pl_mesh.model, pl_mesh2.model,robot_mesh.model,bunny_hitbox,refract_mesh.model);
 	
 //// Light source ////
     // We define a light in space and retrieve its ID in the shader
@@ -581,7 +581,7 @@ async function main() {
 		
 	//// Preprocessing	////
 		// ask what objects are in collision 
-		var in_collision = checkCollisions(colliders,1.7, robot_mesh.model, 1.0);
+		var in_collision = checkCollisions(colliders,1.7, [robot_mesh.model,refract_mesh.model], 1.0);
 		
 		// update the hibox if an object needing a hitbox has moved
 		updateHitbox(bunny_hitbox,[rel_body,rel_ears,rel_head]);
