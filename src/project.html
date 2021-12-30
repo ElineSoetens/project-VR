@@ -336,13 +336,17 @@
             var part_mesh = await make_object(gl, part);
 
             const u_color = gl.getUniformLocation(shader_particle.program,'color');
-
-            
-            
+			
+			var rel_body = glMatrix.vec3.fromValues(-0.3,-0.3,-0.1);
+			var rel_ears = glMatrix.vec3.fromValues(-1.3,2.5,-0.2);
+			var rel_head = glMatrix.vec3.fromValues(-2.1,1.2,0.5);
+			
+            var bunny_hitbox = await makeHitbox(obj_mesh.model,[rel_body,rel_ears,rel_head], [2.0,1.0,0.9],gl);
+            console.log("bunny_hitbox=",bunny_hitbox)
 
             // Let's move them a bit
             //glMatrix.mat4.translate(obj_mesh.model,obj_mesh.model,glMatrix.vec3.fromValues(-0.5, 0.0, 1.0));
-            glMatrix.mat4.translate(obj_mesh.model,obj_mesh.model,glMatrix.vec3.fromValues(-0.5, 0.0, 20.0));
+            glMatrix.mat4.translate(obj_mesh.model,obj_mesh.model,glMatrix.vec3.fromValues(-0.5, -2.0, 2.0));
             glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
             //glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(-0.5,6.0,7.0));
 			      glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
@@ -352,9 +356,8 @@
 
 
 			//glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model, glMatrix.vec3.fromValues(0.0,0.0,20.0));
-			moveObjectKey(document,robot_mesh.model,1.0);
-      moveObjectKey(document, part_mesh.model,1.0);
-
+			moveObjectKey(document,robot_mesh.model,1.0,["0","1"]);
+			moveObjectKey(document, part_mesh.model,1.0,["0","1"]);
       //Create list of particle
       var particle_list = []
       var nr_part = 1000;
@@ -367,8 +370,8 @@
       }
 			
 			var colliders =[];
-			colliders.push(pl_mesh.model, pl_mesh2.model,robot_mesh.model);
-
+			colliders.push(pl_mesh.model, pl_mesh2.model,robot_mesh.model,bunny_hitbox);
+			//console.log("tes=",colliders[3][0].length)
 
             // We define a light in space and retrieve its ID in the shader
             const light_pos = glMatrix.vec3.fromValues(-7.0, 0.0, 1.0);
@@ -415,11 +418,14 @@
       var start_fire = 0;
       var fire = false;
 			
+			
+			
             function animate(time) {
                 deltaTime += 0.005;
 				var in_collision = checkCollisions(colliders,1.7, robot_mesh.model, 1.0);
-				console.log(pl_mesh.model == pl_mesh2.model);
-                camera.update(deltaTime);
+				//console.log("in_collision=",in_collision)
+				updateHitbox(bunny_hitbox,[rel_body,rel_ears,rel_head]);
+				camera.update(deltaTime);
                 //Draw loop
                 gl.clearColor(0.2, 0.2, 0.2, 1);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -431,7 +437,7 @@
 
                 //// Bunny ////
                 var unif = shader_effect.get_uniforms();
-
+				
                 view = camera.get_view_matrix();
                 gl.uniformMatrix4fv(unif['model'], false, obj_mesh.model);
                 gl.uniformMatrix4fv(unif['view'], false, view);
@@ -535,7 +541,7 @@
           fire = true;
           start_fire = deltaTime;
 				};
-				//console.log(dist);
+				
 				gl.uniformMatrix4fv(unif['model'], false, robot_mesh.model);
                 var itM = glMatrix.mat4.create();
                 itM = glMatrix.mat4.invert(itM, robot_mesh.model);

@@ -49,21 +49,21 @@ function satellite_rot(model,rot_ang,rot_axis,origin,
 				*/
 }
 
-function moveObjectKey(doc,model,y){
+function moveObjectKey(doc,model,y,keys){
 	doc.addEventListener('keydown', (event) => {
 		  const key = event.key;
 		  
 		//<li>1. Add the functions to use the arrows and +/- to move in 3 directions</li>
 		// 1. Your Code
 		//Up Down Right Left
-		  if (key === '0') {
+		  if (key === "0") {
 		    // 1. Your code
 			//translation up to lower the view
 			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, y, 0.0));
 
 			return;
 		  }
-		   else if (key === '1') {
+		   else if (key === "1") {
 		   //translate low to shift up the view
 		    glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -y, 0.0));
 			return;
@@ -79,42 +79,71 @@ function checkCollisions(colliders_list,r_collider, other, r_other){
 	
 	//for each pair of objects in colliders_list check if they collide
 	for(let j = 0; j < colliders_list.length; j++){
-	//position = last column 
-	//  /!\ here matrix 4x4 = vetor 1x16
-	let pos_j = glMatrix.vec3.fromValues(colliders_list[j][12],
-										 colliders_list[j][13],
-										 colliders_list[j][14]);
-	glMatrix.vec3.negate(pos_j,pos_j);
-	
-	for (let i = 0; i < colliders_list.length; i++){
-		if(colliders_list[i] != colliders_list[j]){
+		//initialize at high value in case you have a hitbox
+		var pos_j = glMatrix.vec3.fromValues(100*(r_collider+ r_other),1.0,0.0);
+		
+		if (colliders_list[j].length < 16 == false){
 		//position = last column 
 		//  /!\ here matrix 4x4 = vetor 1x16
-		let pos_i = glMatrix.vec3.fromValues(colliders_list[i][12],
-											 colliders_list[i][13],
-											 colliders_list[i][14]);
-													
-		//Create a vector with norm > 	r_collider+ r_other																	
-		let sub =glMatrix.vec3.fromValues(2*(r_collider+ r_other),1.0,0.0);
-		// sub = distance vector between objects
-		glMatrix.vec3.add( sub, pos_i,pos_j);
+			pos_j = glMatrix.vec3.fromValues(colliders_list[j][12],
+											colliders_list[j][13],
+											colliders_list[j][14]);
+			glMatrix.vec3.negate(pos_j,pos_j);
+		}
 		
-		// object other has a different radius must be taken into account 
-		// => 2 cases
-		if(colliders_list[j]== other || colliders_list[i]==other){
-			if (glMatrix.vec3.len(sub) < r_collider + r_other){
-				in_collision.push(colliders_list[j],colliders_list[i]);	
-
-		}}
+	
+	for (let i = 0; i < colliders_list.length; i++){
+		if(i != j){
+		if (colliders_list[i].length < 16){
+			for(let k = 0; k < colliders_list[i][0].length; k++){
+				let pos_k = glMatrix.vec3.fromValues(colliders_list[i][0][k][12],
+													 colliders_list[i][0][k][13],
+													 colliders_list[i][0][k][14]);
+				let sub =glMatrix.vec3.fromValues(2*(r_collider+ r_other),1.0,0.0);
+				// sub = distance vector between objects
+				glMatrix.vec3.add( sub, pos_k,pos_j);
+				if(colliders_list[j]== other ){
+					if (glMatrix.vec3.len(sub) < r_other + colliders_list[i][1][k]){
+					in_collision.push(colliders_list[j],colliders_list[i][2]);	
+				}
+				}
+				else{
+				if (glMatrix.vec3.len(sub) < r_collider + colliders_list[i][1][k]){
+					in_collision.push(colliders_list[j],colliders_list[i][2]);	
+				}
+			}
+		}
+		}
 		else{
-			if (glMatrix.vec3.len(sub) < 2.0*r_collider ){
-				in_collision.push(colliders_list[j],colliders_list[i]);
-		}	
+			//position = last column 
+			//  /!\ here matrix 4x4 = vetor 1x16
+			let pos_i = glMatrix.vec3.fromValues(colliders_list[i][12],
+												colliders_list[i][13],
+												colliders_list[i][14]);
+														
+			//Create a vector with norm > 	r_collider+ r_other																	
+			let sub =glMatrix.vec3.fromValues(2*(r_collider+ r_other),1.0,0.0);
+			// sub = distance vector between objects
+			glMatrix.vec3.add( sub, pos_i,pos_j);
+			
+			// object other has a different radius must be taken into account 
+			// => 2 cases
+			if(colliders_list[j]== other || colliders_list[i]==other){
+				if (glMatrix.vec3.len(sub) < r_collider + r_other){
+					in_collision.push(colliders_list[j],colliders_list[i]);	
+				}
+			}
+			else{
+				if (glMatrix.vec3.len(sub) < 2.0*r_collider ){
+					in_collision.push(colliders_list[j],colliders_list[i]);
+				}
+			}
+		}		
 	
 	}
 	}
 	}
-}
+
 	return in_collision;
 }
 
@@ -172,5 +201,32 @@ class Particle {
           }
                     
         }
+	}
+}
+
+
+async function makeHitbox(object_model, relative_positions, scalings,context){
+	var hitbox = []
+	var hitbox_models = [];
+	var sphere = await load_obj('../objects/sphere_smooth.obj');
+	for (let i = 0; i < relative_positions.length; i++){
+        let s1_mesh = await make_object(context, sphere);
+		s1_mesh.model[12] = object_model[12]+ relative_positions[i][0];
+		s1_mesh.model[13] = object_model[13]+ relative_positions[i][1];
+		s1_mesh.model[14] = object_model[14]+ relative_positions[i][2];
+		glMatrix.mat4.scale(s1_mesh.model,s1_mesh.model,glMatrix.vec3.fromValues(scalings[i],scalings[i],scalings[i]));									
+		hitbox_models.push(s1_mesh.model);
+	}
+		hitbox.push(hitbox_models,scalings,object_model);
+return hitbox;
+	
+
+}
+
+function updateHitbox(hitbox,relative_positions){
+	for (let i = 0; i < hitbox[0].length; i++){
+		hitbox[0][i][12] =hitbox[2][12]+ relative_positions[i][0];
+	    hitbox[0][i][13] =hitbox[2][13]+ relative_positions[i][1];
+	    hitbox[0][i][14] =hitbox[2][14]+ relative_positions[i][2];
 	}
 }
