@@ -56,19 +56,41 @@ function moveObjectKey(doc,model,y,keys){
 		//<li>1. Add the functions to use the arrows and +/- to move in 3 directions</li>
 		// 1. Your Code
 		//Up Down Right Left
-		  if (key === "0") {
+		  if (key === "0" || key === 'o') {
 		    // 1. Your code
 			//translation up to lower the view
 			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, y, 0.0));
 
 			return;
 		  }
-		   else if (key === "1") {
+		   else if (key === "1" || key === 'l') {
 		   //translate low to shift up the view
 		    glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -y, 0.0));
 			return;
-		  
+
 		}
+		else if ( key === 'k') {
+		//translate low to shift up the view
+		 glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-y, 0.0, 0.0));
+		 return;
+ 
+		} else if (key === 'm') {
+			//translate low to shift up the view
+			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(y, 0.0, 0.0));
+			return;
+	 
+		} else if (key === 'i') {
+			//translate low to shift up the view
+			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, -y));
+			return;
+	 
+		} else if  (key === 'p') {
+			//translate low to shift up the view
+			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, y));
+			return;
+	 
+		}
+
 },false);
 }
 

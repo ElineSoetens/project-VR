@@ -693,6 +693,11 @@
                 gl.uniform1i(u_cubemap, 0);
 
                 refract_mesh.draw();
+
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                gl.uniformMatrix4fv(unif['view'], false, reflec);
+                refract_mesh.draw();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 				
 
              //// Planets  ////  

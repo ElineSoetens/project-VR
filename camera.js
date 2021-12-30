@@ -56,7 +56,7 @@ var make_camera = function(canvas, position, up, yaw, pitch) {
             } else if (key === 'q' || key === '4' || key === 'a') {
                 process_keyboard(CameraMovement.LEFT);
                 return;
-            } else if (key === 'd' || key === '6' || key === 'i') {
+            } else if (key === 'd' || key === '6' ){//|| key === 'i') {
                 process_keyboard(CameraMovement.RIGHT);
                 return;
             }
