@@ -101,7 +101,7 @@ async function main() {
 		uniform samplerCube u_cubemap;
 	
 		void main() {
-		//3) Shader code for the object
+		
 		vec3 I = normalize(v_frag_coord - u_view_dir);
 		vec3 R = reflect(I, normalize(v_normal));
 		gl_FragColor = vec4(textureCube(u_cubemap, R).rgb, 1.0);
@@ -237,65 +237,35 @@ async function main() {
 		attribute vec3 tangent;
 		attribute vec3 bitangent;
 	
-		varying vec3 v_normal;
-		varying vec3 v_frag_coord;
+		
 		varying vec2 v_texcoord;
 		
 		uniform mat4 M;
-		uniform mat4 itM;  // inverse transpose model!
 		uniform mat4 V;
 		uniform mat4 P;
 	
 		void main() {
-		vec4 frag_coord = M*vec4(position, 1.0);
-		gl_Position = P*V*frag_coord;
-		
-		// Transform correctly the normals!
-		v_normal = vec3(itM * vec4(normal, 1.0));
-		
-		v_frag_coord = frag_coord.xyz;
-		v_texcoord = texcoord;
+      vec4 frag_coord = M*vec4(position, 1.0);
+      gl_Position = P*V*frag_coord;
+      
+      v_texcoord = texcoord;
 		}
     `;
 
     const source_sun_F = `
 		precision mediump float;
-		varying vec3 v_normal;
-		varying vec3 v_frag_coord;
+		
 		varying vec2 v_texcoord;
 	
 		uniform vec3 u_light_pos;
 		uniform vec3 u_view_dir;
 		uniform sampler2D u_texture;
 		
-	
-		void main() {
-		vec3 normal = normalize(v_normal);
-	
-		// light color
-		vec3 light_color = vec3(1.0, 1.0, 0.99);
-	
-		// Ambient
-		float ambient = 0.1;
-	
-		vec3 L = normalize(u_light_pos - v_frag_coord);
-	
-		// Diffuse
-		float diffusion = max(0.0, dot(v_normal, L));
-	
-		// specural
-		float spec_strength = 0.8;
-		vec3 view_dir = normalize(u_view_dir - v_frag_coord);
-		vec3 reflect_dir = reflect(-L, normal);
-		float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32.0);
-		float specular = spec_strength * spec;
-	
-		vec3 color = (ambient + specular + diffusion) * light_color;
-		//vec3 color = (normal+1.0)/2.0;
-		
-		//gl_FragColor = vec4(color, 1.0);
-		gl_FragColor = vec4(light_color,1.0)* texture2D(u_texture, vec2(v_texcoord.x, 1.0-v_texcoord.y));
-		
+		void main() {	
+      // light color
+      vec3 light_color = vec3(1.0, 1.0, 0.99);
+      
+      gl_FragColor = vec4(light_color,1.0)* texture2D(u_texture, vec2(v_texcoord.x, 1.0-v_texcoord.y));		
 		}
     `;
 
@@ -373,18 +343,18 @@ async function main() {
     var shader_reflection = make_shader(gl, source_reflection_V, source_reflection_F);
 	
 	//Shader refraction
-	var shader_refraction = make_shader(gl,source_refraction_V,source_refraction_F);
+	  var shader_refraction = make_shader(gl,source_refraction_V,source_refraction_F);
 	
-    //Shader for the planet
+  //Shader for the planet
     var shader_planet = make_shader(gl,source_planet_V, source_planet_F);
 
-    //Shader for the sun
+  //Shader for the sun
     var shader_sun = make_shader(gl,source_sun_V,source_sun_F);
 
-    //Shader for the particle
+  //Shader for the particle
     var shader_particle = make_shader(gl,source_particle_V,source_particle_F);
 
-    //Shader for the mirror
+  //Shader for the mirror
     var shader_mirror = make_shader(gl, source_mirror_V, source_mirror_F);
 
 //// Make textures ////
@@ -403,14 +373,14 @@ async function main() {
     var bump_map_robot = make_texture(gl,"../textures/metal_normal.jpg");
 			
 //// Make and load objects 
-    // Loading from files
+  // Loading from files
     var cube = await load_obj('../objects/cube.obj');
     var bunny = await load_obj('../objects/bunny_small.obj');
-	var planet = await load_obj('../objects/Moon2_2K.obj');
-	var sphere = await load_obj('../objects/sphere_smooth.obj');
-	var part = await load_obj('../objects/plane.obj');
-	var cube_mesh = await make_object(gl, cube);
-	var mirror = await load_obj('../objects/plane.obj');
+	  var planet = await load_obj('../objects/Moon2_2K.obj');
+	  var sphere = await load_obj('../objects/sphere_smooth.obj');
+	  var part = await load_obj('../objects/plane.obj');
+	  var cube_mesh = await make_object(gl, cube);
+	  var mirror = await load_obj('../objects/plane.obj');
      
 	// Making objects
 	// Reflective bunny
@@ -427,43 +397,45 @@ async function main() {
     // Particle 
     var part_mesh = await make_object(gl, part);
 	// Mirror
-	var mirror_mesh = await make_object(gl, mirror);
+	  var mirror_mesh = await make_object(gl, mirror);
     var mirror_norm = glMatrix.vec3.fromValues(0.0,1.0,0.0);
     const u_tex_mirror = gl.getUniformLocation(shader_mirror.program,'u_texture');
 	
     const u_color = gl.getUniformLocation(shader_particle.program,'color');
 
 	// Bunny hitbox
-	var rel_body = glMatrix.vec3.fromValues(-0.3,-0.3,-0.1);
-	var rel_ears = glMatrix.vec3.fromValues(-1.3,2.5,-0.2);
-	var rel_head = glMatrix.vec3.fromValues(-2.1,1.2,0.5);
+	  var rel_body = glMatrix.vec3.fromValues(-0.3,-0.3,-0.1);
+	  var rel_ears = glMatrix.vec3.fromValues(-1.3,2.5,-0.2);
+	  var rel_head = glMatrix.vec3.fromValues(-2.1,1.2,0.5);
     var bunny_hitbox = await makeHitbox(bunny_mesh.model,[rel_body,rel_ears,rel_head], [2.0,1.0,0.9],gl);
         
 //// Placing objects ////
 
-    glMatrix.mat4.translate(bunny_mesh.model,bunny_mesh.model,glMatrix.vec3.fromValues(-0.5, -2.0, 2.0));
+    glMatrix.mat4.translate(bunny_mesh.model,bunny_mesh.model,glMatrix.vec3.fromValues(3.5, -2.0, 2.0));
     glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
-	glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
+    glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(0.0,7.0,0.0));
+	  glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
     glMatrix.mat4.translate(part_mesh.model,part_mesh.model,glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
 
-    //Move the mirror
-    glMatrix.mat4.translate(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(6.0, -2.5, 0.0));
+  //Move the mirror
+    glMatrix.mat4.translate(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(15.0, -2.5, 0.0));
     glMatrix.mat4.rotate(mirror_mesh.model,mirror_mesh.model,-1.5708, glMatrix.vec3.fromValues(0.0, 0.0, 1.0));
     glMatrix.mat4.scale(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(4.0,4.0,4.0));
-
+  //get the invert transpose matrix used to determine the norm of the mirror
     var itM = glMatrix.mat4.create();
     itM = glMatrix.mat4.invert(itM, mirror_mesh.model);
     itM = glMatrix.mat4.transpose(itM, itM);
 
     glMatrix.vec3.transformMat4(mirror_norm,mirror_norm,itM);
     glMatrix.vec3.normalize(mirror_norm,mirror_norm);
-    console.log(mirror_norm);
+    //console.log(mirror_norm);
+  //get the position of the mirror
     var mirror_position = glMatrix.vec3.fromValues(mirror_mesh.model[12],
                                                  mirror_mesh.model[13],
                                                  mirror_mesh.model[14],);
 	
 
-	glMatrix.mat4.translate(refract_mesh.model,refract_mesh.model,glMatrix.vec3.fromValues(0.0, -5.0, 0.0));
+	glMatrix.mat4.translate(refract_mesh.model,refract_mesh.model,glMatrix.vec3.fromValues(-16.0, -3.0, 0.0));
 
 	// Listeners to move the robot 
 	moveObjectKey(document,robot_mesh.model,1.0,["0","1"]);
@@ -514,26 +486,28 @@ async function main() {
     var texCube = make_texture_cubemap(gl, '../textures/cubemaps/lightblue');
     const u_cubemap = gl.getUniformLocation(shader_cubemap.program, 'u_cubemap');
     
-    // 4) Define all the variables you will need to perform the computations
-    //    in the shaders here! (light, useful matrices, ...)
     
     // We need to send the camera position to the shader
     const u_view_dir = gl.getUniformLocation(shader_reflection.program, 'u_view_dir');
 
 //// Frame Buffer ////
-    //Val of the code :
+    // Uncomment next part to have the Value of the code given by checkFramebufferStatus
+    /*
     console.log("gl.FRAMEBUFFER_COMPLETE :",gl.FRAMEBUFFER_COMPLETE);
     console.log("gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT :",gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
     console.log("gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT :",gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
     console.log("gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS :", gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS);
     console.log("gl.FRAMEBUFFER_UNSUPPORTED :",gl.FRAMEBUFFER_UNSUPPORTED);
-
+    
     console.log("canvas status:",gl.checkFramebufferStatus(gl.FRAMEBUFFER));
-
+    */
+  // Create the framebuffer object (fbo) we will use and bind it to make modification
     var fbo = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
 
-    //generate texture to attach to fbo
+  //Generate a texture to attach to fbo
+  //We use a texture and not a render buffer because we need to acces the information
+  //stocked to draw the mirror after
     textureColorebuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureColorebuffer);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,c_width,c_height,0,gl.RGBA,gl.UNSIGNED_BYTE, null);
@@ -542,27 +516,29 @@ async function main() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.bindTexture(gl.TEXTURE_2D, null);
-
+  //Attach the texture
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,textureColorebuffer,0);
 
-    //generate renderbuffer for the depth (and stencil ?)
+  //Generate renderbuffer for depth and stencil
+  //We use a renderbuffer and not a texture because we don't need to access 
+  //the information inside it and it is more efficient than using another texture
     var rbo = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
     gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_STENCIL,c_width,c_height);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-
+  //Attach the renderbuffer
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_STENCIL_ATTACHMENT,gl.RENDERBUFFER,rbo);
-
+  //Enable depth testing now thta we have a depth buffer
     gl.enable(gl.DEPTH_TEST);
 
-    console.log("fbo :",gl.checkFramebufferStatus(gl.FRAMEBUFFER));
+  //The console log can be used to check that the fbo is correctly initialized 
+    /*console.log("fbo :",gl.checkFramebufferStatus(gl.FRAMEBUFFER));
     console.log("parameter",gl.getParameter(gl.FRAMEBUFFER_BINDING));
-
+    */
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-    console.log("canvas :",gl.checkFramebufferStatus(gl.FRAMEBUFFER));
+    /*console.log("canvas :",gl.checkFramebufferStatus(gl.FRAMEBUFFER));
     console.log("parameter",gl.getParameter(gl.FRAMEBUFFER_BINDING));
-    
-    //gl.deleteFramebuffer(fbo);
+    */
 
 //// Parameters before animate loop ////
     var deltaTime = 0;
@@ -571,8 +547,9 @@ async function main() {
 	var theta1 =0.01;
 	//rotation angle of planet 2
 	var theta2 =0.01;
-    var start_fire = 0;
-    var fire = false;
+  // parameter used to know if the robot is on fire
+  var start_fire = 0;
+  var fire = false;
 			
 //// Animate loop ////		
     function animate(time) {
@@ -590,14 +567,13 @@ async function main() {
         gl.clearColor(0.2, 0.2, 0.2, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        //Clear fbo color fbo
+        //Clear buffer for the framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-        //gl.viewport(0,0,1,1);
         gl.clearColor(1.0, 0.6, 0.6, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         
-		//get info about the mirror to generate the matrix for the reflection
+		//Obtain the view matrix neede to draw the reflection
         reflec = camera.get_reflection_matrix(mirror_norm, mirror_position);
 		
     //// Draw our scene ////
@@ -609,8 +585,7 @@ async function main() {
 		
 		// Get M V P
         view = camera.get_view_matrix();
-        //here i guess i should make a function of camera to have the view for
-        //the reflection
+        
         gl.uniformMatrix4fv(unif['model'], false, bunny_mesh.model);
         gl.uniformMatrix4fv(unif['view'], false, view);
         gl.uniformMatrix4fv(unif['proj'], false, projection);
@@ -821,7 +796,7 @@ async function main() {
         
         //// Particle ////
         if (fire === true && deltaTime-start_fire < 0.9){
-			//update position of all particle
+			//If we should have a fire then update position of all particles
 			var new_part = 100;
 			var part_added = 0;
 			for (i in particle_list){
@@ -830,7 +805,8 @@ async function main() {
 					part_added = part_added + 1;
 				}
 			}
-			//draw the particle
+			//draw the particle - we use another additive blend mode
+      //it gives a glow effect when they are stacked one each other
 			gl.enable(gl.BLEND);
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 			shader_particle.use();
@@ -848,9 +824,10 @@ async function main() {
 					gl.uniformMatrix4fv(unif['model'], false, model_part);
 		
 					gl.uniform4fv(u_color, particle_list[i].color);
+          //Draw the partcile
 					gl.uniformMatrix4fv(unif['view'], false, view);
 					part_mesh.draw();
-		
+          //Draw in the fbo
 					gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 					gl.uniformMatrix4fv(unif['view'], false, reflec);
 					part_mesh.draw()
@@ -860,9 +837,10 @@ async function main() {
 			}
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 		}
-        else if (fire === true){
-			fire = false;
-        } 
+      else if (fire === true){
+      //if the collision was too long ago then we stop the fire 
+			  fire = false;
+      } 
          
         //// Mirror ////
         //draw the cube map for the mirror:
