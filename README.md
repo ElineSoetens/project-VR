@@ -10,6 +10,11 @@ source for planet texture (+ bump map) : http://planetpixelemporium.com/planets.
   https://free3d.com/3d-model/moon-photorealistic-2k-853071.html
 
 texture sun : https://www.solarsystemscope.com/textures/
+liens des models utilisé :
+moon : https://free3d.com/3d-model/moon-photorealistic-2k-853071.html
+mars : https://free3d.com/3d-model/mars-photorealistic-2k-671043.html
+mercure : https://free3d.com/3d-model/mercury-photorealistic-1k-260439.html
+venus : https://free3d.com/3d-model/venus-photorealistic-1k-273057.html
 
 
 #TO DO
