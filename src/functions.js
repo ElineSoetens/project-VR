@@ -144,9 +144,10 @@ function checkCollisions(colliders_list,r_collider, others, r_other){
 }
 
 class Particle {
-	//Note position and velocity should be glMatrix.vec3
+	//Note position,velocity and orientation should be glMatrix.vec3
 	//color should be a glMatrix.vec4
 	//life is a float
+	//category determined if the particle stays near the center or flies away
 	constructor(position, velocity, orientation, color, life){
 		this.position = position;
 		this.velocity = velocity;
