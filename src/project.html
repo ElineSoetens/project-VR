@@ -661,8 +661,7 @@ async function main() {
 		
 	//// Preprocessing	////
 		// ask what objects are in collision 
-		var in_collision = checkCollisions(colliders,1.7, [robot_mesh.model,refract_mesh.model], 1.0);
-		
+		var in_collision = checkCollisions(colliders,1.7, [refract_mesh.model], 1.0);
 		// update the hibox if an object needing a hitbox has moved
 		updateHitbox(bunny_hitbox,[rel_body,rel_ears,rel_head]);
     updateHitbox(robot_hitbox,[rel_top,rel_xneg,rel_xpos,rel_zneg,rel_zpos]);

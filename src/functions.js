@@ -60,16 +60,60 @@ function moveObjectKey(doc,model,y,keys){
 }
 
 
+
+function moveObjectKey(doc,model,y,keys){
+	doc.addEventListener('keydown', (event) => {
+		  const key = event.key;
+		  
+		//<li>1. Add the functions to use the arrows and +/- to move in 3 directions</li>
+		// 1. Your Code
+		//Up Down Right Left
+		  if (key === "0" || key === 'o') {
+		    // 1. Your code
+			//translation up to lower the view
+			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, y, 0.0));
+
+			return;
+		  }
+		   else if (key === "1" || key === 'l') {
+		   //translate low to shift up the view
+		    glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -y, 0.0));
+			return;
+
+		}
+		else if ( key === 'm') {
+		//translate low to shift up the view
+		 glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-y, 0.0, 0.0));
+		 return;
+ 
+		} else if (key === 'k') {
+			//translate low to shift up the view
+			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(y, 0.0, 0.0));
+			return;
+	 
+		} else if (key === 'i') {
+			//translate low to shift up the view
+			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, -y));
+			return;
+	 
+		} else if  (key === 'p') {
+			//translate low to shift up the view
+			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, y));
+			return;
+	 
+		}
+
+},false);
+}
+
+
 function checkCollisions(colliders_list,r_collider, others, r_other){
 	//contains all objects in collision
 	//if two spheres have are separated by a distance < their radius they are added
 	var in_collision = [];
-	
 	//for each pair of objects in colliders_list check if they collide
 	for(let j = 0; j < colliders_list.length; j++){
-		//initialize at high value in case you have a hitbox (this value allows to not care about it)
-		var pos_j = glMatrix.vec3.fromValues(100*(r_collider+ r_other),1.0,0.0);
-		//hitbox has size < 16
+		//hitbox has size < 16 while model is size 16
 		if (colliders_list[j].length < 16 == false){
 		//position = last column 
 		//  /!\ here matrix 4x4 = vetor 1x16
@@ -77,6 +121,18 @@ function checkCollisions(colliders_list,r_collider, others, r_other){
 											 colliders_list[j][13],
 											 colliders_list[j][14]);
 			glMatrix.vec3.negate(pos_j,pos_j);
+		}
+		
+		else{
+			pos_j = [];
+			for (let l = 0; l < colliders_list[j][0].length; l++){
+				//hitbox is the first element in the list
+				let pos_l = glMatrix.vec3.fromValues(colliders_list[j][0][l][12],
+													 colliders_list[j][0][l][13],
+													 colliders_list[j][0][l][14]);
+				glMatrix.vec3.negate(pos_l,pos_l);
+				pos_j.push(pos_l);
+			}
 		}
 		
 		//Second loop to check for the pairs in collision
@@ -87,22 +143,43 @@ function checkCollisions(colliders_list,r_collider, others, r_other){
 			if (colliders_list[i].length < 16){
 				for(let k = 0; k < colliders_list[i][0].length; k++){
 					//hitbox is the first element in the list
-					let pos_k = glMatrix.vec3.fromValues(colliders_list[i][0][k][12],
-														colliders_list[i][0][k][13],
-														colliders_list[i][0][k][14]);
-					let sub =glMatrix.vec3.create();
-					// sub = distance vector between objects
-					glMatrix.vec3.add( sub, pos_k,pos_j);
+					var pos_k = glMatrix.vec3.fromValues(colliders_list[i][0][k][12],
+														 colliders_list[i][0][k][13],
+														 colliders_list[i][0][k][14]);
+					var sub =glMatrix.vec3.create();
+					
+					
 					if(others.includes(colliders_list[j]) ){
+						// sub = distance vector between objects
+						glMatrix.vec3.add( sub, pos_k,pos_j);
+						
 						if (glMatrix.vec3.len(sub) < r_other + colliders_list[i][1][k]){
-						in_collision.push(colliders_list[j],colliders_list[i][2]);	
+							in_collision.push(colliders_list[j],colliders_list[i][2]);	
 						}
 					}
-					else{
-					if (glMatrix.vec3.len(sub) < r_collider + colliders_list[i][1][k]){
-						in_collision.push(colliders_list[j],colliders_list[i][2]);	
+					
+					else if(colliders_list[j].length < 16 == false){
+						// sub = distance vector between objects
+						glMatrix.vec3.add( sub, pos_k,pos_j);
+						
+						if (glMatrix.vec3.len(sub) < r_collider + colliders_list[i][1][k]){
+							in_collision.push(colliders_list[j],colliders_list[i][2]);	
+							}
+					}
+					
+					else if (colliders_list[j].length < 16 ){
+						
+						for (let m = 0; m < pos_j.length; m++){
+							// sub = distance vector between objects
+							glMatrix.vec3.add( sub, pos_k,pos_j[m]);
+							
+							if (glMatrix.vec3.len(sub) < colliders_list[j][1][m] + colliders_list[i][1][k]){
+								in_collision.push(colliders_list[j][2],colliders_list[i][2]);	
+							}
 						}
 					}
+					
+					
 				}
 			}
 			else{
@@ -233,3 +310,4 @@ function updateHitbox(hitbox,relative_positions){
 	    hitbox[0][i][14] =hitbox[2][14]+ relative_positions[i][2];
 	}
 }
+
