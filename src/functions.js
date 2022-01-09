@@ -232,7 +232,7 @@ class Particle {
 		this.color = color;
 		this.life = life;
 		this.size = 0.001;
-		this.category = Math.floor(Math.random()*1.5);
+		this.category = Math.floor(Math.random()*1.8);
 	}
 
 	update_part(part_added, new_part){
@@ -241,13 +241,14 @@ class Particle {
             this.position = glMatrix.vec3.scaleAndAdd(this.position,this.position,this.velocity,0.005);
 			//plus rouge et extérieur
 			if (this.category == 0){
-				this.color[1] = this.color[1] - 0.005 * 2.0
-            	this.color[2] = this.color[2] - 0.005 * 3.0
+				
+				this.color[1] = this.color[1] - 0.005 * 1.0
+            	this.color[2] = this.color[2] - 0.005 * 1.5
 			} 
 			//plus jaune et intérieur
 			else {
-				this.color[1] = this.color[1] - 0.005 * 0.5
-            	this.color[2] = this.color[2] - 0.005 * 2.0
+				this.color[1] = this.color[1] - 0.005 * 1.0
+            	this.color[2] = this.color[2] - 0.005 * 4.0
 			}
             
 			//this.color[3] = this.color[3] - 0.005 * 2.0
@@ -258,14 +259,18 @@ class Particle {
           if(part_added <= new_part){
             //this.velocity = glMatrix.vec3.random(this.velocity,0.05);
 			if(this.category == 0){
-				this.life = Math.random()*2.0;
-				this.position = glMatrix.vec3.random(this.position,0.08);
+				//red-external part of fire
+				
+				this.life = Math.random()*3.0;
+				this.position = glMatrix.vec3.random(this.position,0.45)
 				this.velocity = glMatrix.vec3.fromValues(Math.random()*0.6 - 0.3,0.4,Math.random()*0.6 - 0.3);
 				this.color = glMatrix.vec4.fromValues(1.0,0.6,0.4,1.0);
 			}else{
+				//yellow-internal part of fire
+				
 				this.life = Math.random()*0.8;
-				this.position = glMatrix.vec3.random(this.position,0.03);
-				this.velocity = glMatrix.vec3.fromValues(Math.random()*0.4 - 0.2,0.5,Math.random()*0.4 - 0.2);
+				this.position = glMatrix.vec3.random(this.position,0.35)
+				this.velocity = glMatrix.vec3.fromValues(Math.random()*1.0 - 0.5,Math.random()*2.2 - 0.3,Math.random()*1.0 - 0.5);
 				this.color = glMatrix.vec4.fromValues(1.0,1.0,1.0,1.0);
 			}		
             this.orientation = glMatrix.vec3.random(this.orientation,1.0);

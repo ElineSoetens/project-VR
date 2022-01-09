@@ -515,7 +515,7 @@ async function main() {
     glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
     glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(0.0,7.0,0.0));
 	  glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
-    glMatrix.mat4.translate(part_mesh.model,part_mesh.model,glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
+    glMatrix.mat4.translate(part_mesh.model,part_mesh.model,glMatrix.vec3.fromValues(0.0, 1.2, 0.0));
 
   //Move the mirror
     glMatrix.mat4.translate(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(15.0, -2.5, 0.0));
@@ -544,7 +544,7 @@ async function main() {
 //// Particles ////
     //Create list of particle
     var particle_list = []
-    var nr_part = 1000;
+    var nr_part = 2000;
     for (var i = 0; i < nr_part; i = i +1){
     particle_list.push(new Particle(glMatrix.vec3.fromValues(0.0,0.0,0.0),
                           glMatrix.vec3.fromValues(0.0,1.0,0.0),
@@ -924,7 +924,7 @@ async function main() {
         //// Particle ////
         if (fire === true && deltaTime-start_fire < 0.9){
 			//If we should have a fire then update position of all particles
-			var new_part = 100;
+			var new_part = 3000;
 			var part_added = 0;
 			for (i in particle_list){
 				var part_bool = particle_list[i].update_part(part_added, new_part);
