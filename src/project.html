@@ -33,6 +33,7 @@ async function main() {
 	// Enable tests for better rendering
 	gl.enable(gl.DEPTH_TEST);
 	//gl.enable(gl.CULL_FACE); // cull hidden faces behind normals!
+  gl.enable(gl.PROGRAM_POINT_SIZE);
 	
 
 //// Shaders sources ////
@@ -356,6 +357,7 @@ async function main() {
 		void main(){
 		v_particleColor = color;
 		gl_Position = P*V*M*vec4(position, 1.0);
+    gl_PointSize = gl_Position.z;
 		}
     `;
 
@@ -436,7 +438,7 @@ async function main() {
     var shader_mirror = make_shader(gl, source_mirror_V, source_mirror_F);
 
 //// Make textures ////
-	// Planet
+	// Moon
     var bump_map = make_texture(gl,"../textures/Bump_2K.jpg")
     const u_bump_map = gl.getUniformLocation(shader_planet.program, 'u_bumpmap');
     
@@ -444,10 +446,17 @@ async function main() {
     const u_tex_moon = gl.getUniformLocation(shader_planet.program, 'u_texture');
     
 
-    //Mercury
+  //Mercury
     var bump_merc = make_texture(gl,"../textures/mercury_Bump_1K.jpg")
     var tex_merc = make_texture(gl,"../textures/mercury_Diffuse_1K.jpg")
 
+  //Mercury
+    var bump_mars = make_texture(gl,"../textures/mars_Bump_2K.jpg")
+    var tex_mars = make_texture(gl,"../textures/mars_Diffuse_2K.jpg")
+   
+  // Venus  
+    var bump_venus = make_texture(gl,"../textures/venus_Bump_1K.jpg")
+    var tex_venus = make_texture(gl,"../textures/venus_Diffuse_1K.jpg")
 
 	// Sun
     var tex_sun = make_texture(gl,"../textures/sun.jpg");
@@ -466,20 +475,25 @@ async function main() {
   // Loading from files
     var cube = await load_obj('../objects/cube.obj');
     var bunny = await load_obj('../objects/bunny_small.obj');
-	  var planet = await load_obj('../objects/Moon2_2K.obj');
+	  var moon = await load_obj('../objects/Moon2_2K.obj');
     var mercury = await load_obj('../objects/Mercury_1K.obj');
+    var mars = await load_obj('../objects/Mars_2K.obj');
+    var venus = await load_obj('../objects/Venus_1K.obj');
 	  var sphere = await load_obj('../objects/sphere_smooth.obj');
 	  var part = await load_obj('../objects/plane.obj');
-	  var cube_mesh = await make_object(gl, cube);
 	  var mirror = await load_obj('../objects/plane.obj');
     var robot = await load_obj('../objects/bot_hydrau.obj');
      
 	// Making objects
+  // Cube map
+    var cube_mesh = await make_object(gl, cube);
 	// Reflective bunny
     var bunny_mesh = await make_object(gl, bunny);
 	// Planets
-    var pl_mesh = await make_object(gl, planet);
-    var pl_mesh2 = await make_object(gl, mercury);
+    var pl_mesh = await make_object(gl, moon);
+    var pl_mesh2 = await make_object(gl, moon);
+    var mars_mesh = await make_object(gl, mars);
+    var venus_mesh = await make_object(gl, venus);
 	// Sun
     var sun_mesh = await make_object(gl, sphere);
 	// Refractive sphere
@@ -511,11 +525,17 @@ async function main() {
         
 //// Placing objects ////
 
-    glMatrix.mat4.translate(bunny_mesh.model,bunny_mesh.model,glMatrix.vec3.fromValues(3.5, -2.0, 2.0));
+    //glMatrix.mat4.translate(bunny_mesh.model,bunny_mesh.model,glMatrix.vec3.fromValues(3.5, -2.0, 2.0));
+    glMatrix.mat4.translate(bunny_mesh.model,bunny_mesh.model,glMatrix.vec3.fromValues(-16.0, -3.0, 3.0));
     glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
     glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(0.0,7.0,0.0));
+    glMatrix.mat4.translate(mars_mesh.model,mars_mesh.model, glMatrix.vec3.fromValues(1.0,-3.0,1.0));
+    glMatrix.mat4.translate(venus_mesh.model,venus_mesh.model, glMatrix.vec3.fromValues(4.0,0.0,3.0));
 	  glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
     glMatrix.mat4.translate(part_mesh.model,part_mesh.model,glMatrix.vec3.fromValues(0.0, 1.2, 0.0));
+
+    glMatrix.mat4.scale(mars_mesh.model,mars_mesh.model,glMatrix.vec3.fromValues(0.5,0.5,0.5));
+    glMatrix.mat4.scale(venus_mesh.model,venus_mesh.model,glMatrix.vec3.fromValues(2.5,2.5,2.5));
 
   //Move the mirror
     glMatrix.mat4.translate(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(15.0, -2.5, 0.0));
@@ -535,7 +555,8 @@ async function main() {
                                                  mirror_mesh.model[14],);
 	
 
-	glMatrix.mat4.translate(refract_mesh.model,refract_mesh.model,glMatrix.vec3.fromValues(-16.0, -3.0, 0.0));
+	//glMatrix.mat4.translate(refract_mesh.model,refract_mesh.model,glMatrix.vec3.fromValues(-16.0, -3.0, 0.0));
+  glMatrix.mat4.translate(refract_mesh.model,refract_mesh.model,glMatrix.vec3.fromValues(1.0, -2.0, -2.0));
 
 	// Listeners to move the robot 
 	moveObjectKey(document,robot_mesh.model,1.0,["0","1"]);
@@ -556,7 +577,7 @@ async function main() {
 //// Colliders	////	
 	var colliders =[];
 	//colliders.push(pl_mesh.model, pl_mesh2.model,robot_mesh.model,bunny_hitbox,refract_mesh.model);
-  colliders.push(pl_mesh.model, pl_mesh2.model,robot_hitbox,bunny_hitbox,refract_mesh.model);
+  colliders.push(pl_mesh.model, pl_mesh2.model, mars_mesh.model, venus_mesh.model,robot_hitbox,bunny_hitbox,refract_mesh.model);
 	
 //// Light source ////
     // We define a light in space and retrieve its ID in the shader
@@ -572,7 +593,7 @@ async function main() {
     sun_mesh.model = glMatrix.mat4.translate(sun_mesh.model, sun_mesh.model, light_pos);
 
 //// Camera ////    
-    position = glMatrix.vec3.fromValues(0, 0, -4.0)
+    position = glMatrix.vec3.fromValues(0, 0, -6.0)
     up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0)
     yaw = -90.0
     pitch = 0.0
@@ -650,8 +671,12 @@ async function main() {
 	var theta1 =0.01;
 	//rotation angle of planet 2
 	var theta2 =0.01;
+  //rotation angle of planet 3
+  var theta3 =0.01;
+  //rotation angle of planet 4
+  var theta4 =0.005;
   // parameter used to know if the robot is on fire
-  var start_fire = 0;
+  var start_fire = 0.0;
   var fire = false;
 			
 //// Animate loop ////		
@@ -795,6 +820,7 @@ async function main() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		
 		//// Planet 2 ////
+        pl_mesh2.activate(shader_planet);
         // Planet Motion 
         if (in_collision.includes(pl_mesh2.model)&& prev_in_collision.includes(pl_mesh2.model)== false){
 			//if first loop round in collision => change rotation direction
@@ -832,7 +858,86 @@ async function main() {
         gl.uniformMatrix4fv(unif['view'], false, reflec);
         pl_mesh2.draw();
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    
+    //// Planet 3 ////
+        mars_mesh.activate(shader_planet);
+        // Planet Motion 
+        if (in_collision.includes(mars_mesh.model)&& prev_in_collision.includes(mars_mesh.model)== false){
+			//if first loop round in collision => change rotation direction
+			theta3 = -theta3
+		}
+        satellite_rot(mars_mesh.model,theta3, glMatrix.vec3.fromValues(1.0,1.0,0.0),
+                          light_pos,glMatrix.vec3.fromValues(0.0,0.0,0.0),
+                          glMatrix.vec3.fromValues(1.0,1.0,1.0))
 		
+		//Get M V P
+        gl.uniformMatrix4fv(unif['model'], false, mars_mesh.model);
+        gl.uniformMatrix4fv(unif['view'], false, view);
+		
+		//Inverse transpose
+        var itM = glMatrix.mat4.create();
+        itM = glMatrix.mat4.invert(itM, mars_mesh.model);
+        itM = glMatrix.mat4.transpose(itM,itM);
+        gl.uniformMatrix4fv(unif['itmodel'],false,itM);
+
+    //Texture
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex_mars);
+        gl.uniform1i(u_tex_moon,0);
+		
+		//Bumpmap
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, bump_mars);
+        gl.uniform1i(u_bump_map,1);
+
+		
+        mars_mesh.draw();
+		
+		//Draw in fbo
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.uniformMatrix4fv(unif['view'], false, reflec);
+        mars_mesh.draw();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		
+    //// Planet 4 ////
+    venus_mesh.activate(shader_planet);
+        // Planet Motion 
+        if (in_collision.includes(venus_mesh.model)&& prev_in_collision.includes(venus_mesh.model)== false){
+			//if first loop round in collision => change rotation direction
+			theta4 = -theta4
+		}
+        satellite_rot(venus_mesh.model,theta4, glMatrix.vec3.fromValues(0.0,1.0,2.0),
+                          light_pos,glMatrix.vec3.fromValues(0.0,0.0,0.0),
+                          glMatrix.vec3.fromValues(1.0,1.0,1.0))
+		
+		//Get M V P
+        gl.uniformMatrix4fv(unif['model'], false, venus_mesh.model);
+        gl.uniformMatrix4fv(unif['view'], false, view);
+		
+		//Inverse transpose
+        var itM = glMatrix.mat4.create();
+        itM = glMatrix.mat4.invert(itM, venus_mesh.model);
+        itM = glMatrix.mat4.transpose(itM,itM);
+        gl.uniformMatrix4fv(unif['itmodel'],false,itM);
+
+    //Texture
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex_venus);
+        gl.uniform1i(u_tex_moon,0);
+		
+		//Bumpmap
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, bump_venus);
+        gl.uniform1i(u_bump_map,1);
+
+		
+        venus_mesh.draw();
+		
+		//Draw in fbo
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.uniformMatrix4fv(unif['view'], false, reflec);
+        venus_mesh.draw();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		
 		//// Robot ////
     shader_robot.use();
@@ -845,6 +950,7 @@ async function main() {
 			glMatrix.mat4.translate(part_mesh.model, part_mesh.model, glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
 			fire = true;
 			start_fire = deltaTime;
+      
 		};
 
 		//Get M V P
@@ -922,6 +1028,7 @@ async function main() {
 
         
         //// Particle ////
+        
         if (fire === true && deltaTime-start_fire < 0.9){
 			//If we should have a fire then update position of all particles
 			var new_part = 3000;
