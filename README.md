@@ -11,6 +11,8 @@ source for planet texture (+ bump map) : http://planetpixelemporium.com/planets.
   https://free3d.com/3d-model/moon-photorealistic-2k-853071.html
 
 texture sun : https://www.solarsystemscope.com/textures/
+millenium falcon : https://www.stickpng.com/fr/img/transport/vaisseaux-spatiaux/navette-spatiale
+
 liens des models utilisé :
 moon : https://free3d.com/3d-model/moon-photorealistic-2k-853071.html
 mars : https://free3d.com/3d-model/mars-photorealistic-2k-671043.html
