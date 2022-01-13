@@ -339,7 +339,6 @@ async function main() {
 		
 		varying vec2 v_texcoord;
 	
-		uniform vec3 u_light_pos;
 		uniform vec3 u_view_dir;
 		uniform sampler2D u_texture;
 		
@@ -417,37 +416,50 @@ async function main() {
 //// Making Shaders ////
 	//Shader for cubemap
     var shader_cubemap = make_shader(gl, source_cubemap_V, source_cubemap_F);
+    const u_cubemap = gl.getUniformLocation(shader_cubemap.program, 'u_cubemap');
     
 	// Shader for reflection
     var shader_reflection = make_shader(gl, source_reflection_V, source_reflection_F);
+    const u_view_dir = gl.getUniformLocation(shader_reflection.program, 'u_view_dir');
 	
 	//Shader refraction
 	  var shader_refraction = make_shader(gl,source_refraction_V,source_refraction_F);
 	
   //Shader for the planet
     var shader_planet = make_shader(gl,source_planet_V, source_planet_F);
+    const u_bump_map = gl.getUniformLocation(shader_planet.program, 'u_bumpmap');
+    const u_tex_moon = gl.getUniformLocation(shader_planet.program, 'u_texture');
+    const u_light_pos = gl.getUniformLocation(shader_planet.program, 'u_light_pos');
+    
   
   //Shader for the robot
     var shader_robot = make_shader(gl,source_robot_V, source_robot_F);
+    const u_bump_robot = gl.getUniformLocation(shader_robot.program, 'u_bumpmap');
+    const u_tex_robot = gl.getUniformLocation(shader_robot.program, 'u_texture');
+    const u_metal_robot = gl.getUniformLocation(shader_robot.program, 'u_metal');
+    const u_light_pos_robot = gl.getUniformLocation(shader_robot.program, 'u_light_pos');
+    const u_view_dir_robot = gl.getUniformLocation(shader_robot.program, 'u_view_dir');
 
   //Shader for the sun
     var shader_sun = make_shader(gl,source_sun_V,source_sun_F);
+    const u_tex_sun = gl.getUniformLocation(shader_sun.program, 'u_texture');
 
   //Shader for the particle
     var shader_particle = make_shader(gl,source_particle_V,source_particle_F);
+    const u_color = gl.getUniformLocation(shader_particle.program,'color');
 
   //Shader for the mirror
     var shader_mirror = make_shader(gl, source_mirror_V, source_mirror_F);
+    const u_tex_mirror = gl.getUniformLocation(shader_mirror.program,'u_texture');
 
 //// Make textures ////
+  // Cubemap
+    var texCube = make_texture_cubemap(gl, '../textures/cubemaps/lightblue');
+    
 	// Moon
     var bump_map = make_texture(gl,"../textures/Bump_2K.jpg")
-    const u_bump_map = gl.getUniformLocation(shader_planet.program, 'u_bumpmap');
-    
     var tex_planet = make_texture(gl,"../textures/Diffuse_2K.jpg");
-    const u_tex_moon = gl.getUniformLocation(shader_planet.program, 'u_texture');
     
-
   //Mercury
     var bump_merc = make_texture(gl,"../textures/mercury_Bump_1K.jpg")
     var tex_merc = make_texture(gl,"../textures/mercury_Diffuse_1K.jpg")
@@ -462,16 +474,13 @@ async function main() {
 
 	// Sun
     var tex_sun = make_texture(gl,"../textures/sun.jpg");
-    const u_tex_sun = gl.getUniformLocation(shader_sun.program, 'u_texture');
+    
 	
 	// Robot
-    //var tex_robot = make_texture(gl,"../textures/metal.jpg");
     var tex_robot = make_texture(gl,"../textures/Sphere_Bot_color_2.jpg");
     var bump_map_robot = make_texture(gl,"../textures/Sphere_Bot_nmap.jpg");
     var metal_robot = make_texture(gl,"../textures/Sphere_Bot_metalness.jpg");
-    const u_bump_robot = gl.getUniformLocation(shader_robot.program, 'u_bumpmap');
-    const u_tex_robot = gl.getUniformLocation(shader_robot.program, 'u_texture');
-    const u_metal_robot = gl.getUniformLocation(shader_robot.program, 'u_metal');
+    
 			
 //// Make and load objects 
   // Loading from files
@@ -507,9 +516,8 @@ async function main() {
 	// Mirror
 	  var mirror_mesh = await make_object(gl, mirror);
     var mirror_norm = glMatrix.vec3.fromValues(0.0,1.0,0.0);
-    const u_tex_mirror = gl.getUniformLocation(shader_mirror.program,'u_texture');
+    
 	
-    const u_color = gl.getUniformLocation(shader_particle.program,'color');
 
 	// Bunny hitbox
 	  var rel_body = glMatrix.vec3.fromValues(-0.3,-0.3,-0.1);
@@ -527,23 +535,31 @@ async function main() {
         
 //// Placing objects ////
 
-    //glMatrix.mat4.translate(bunny_mesh.model,bunny_mesh.model,glMatrix.vec3.fromValues(3.5, -2.0, 2.0));
+  // Bunny
     glMatrix.mat4.translate(bunny_mesh.model,bunny_mesh.model,glMatrix.vec3.fromValues(-16.0, -3.0, 3.0));
+
+  // Sun
+    const light_pos = glMatrix.vec3.fromValues(-7.0, 0.0, 1.0);
+    // translate position of the sun to coincide with light source position
+    sun_mesh.model = glMatrix.mat4.translate(sun_mesh.model, sun_mesh.model, light_pos);
+
+  // Planets
     glMatrix.mat4.translate(pl_mesh.model,pl_mesh.model, glMatrix.vec3.fromValues(-7.0,0.0,-5.0));
     glMatrix.mat4.translate(pl_mesh2.model,pl_mesh2.model, glMatrix.vec3.fromValues(0.0,7.0,0.0));
     glMatrix.mat4.translate(mars_mesh.model,mars_mesh.model, glMatrix.vec3.fromValues(1.0,-3.0,1.0));
-    glMatrix.mat4.translate(venus_mesh.model,venus_mesh.model, glMatrix.vec3.fromValues(4.0,0.0,3.0));
-	  glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
-    glMatrix.mat4.translate(part_mesh.model,part_mesh.model,glMatrix.vec3.fromValues(0.0, 1.2, 0.0));
-
     glMatrix.mat4.scale(mars_mesh.model,mars_mesh.model,glMatrix.vec3.fromValues(0.5,0.5,0.5));
+    glMatrix.mat4.translate(venus_mesh.model,venus_mesh.model, glMatrix.vec3.fromValues(4.0,0.0,3.0));
     glMatrix.mat4.scale(venus_mesh.model,venus_mesh.model,glMatrix.vec3.fromValues(2.5,2.5,2.5));
+  // Robot
+	  glMatrix.mat4.translate(robot_mesh.model,robot_mesh.model,glMatrix.vec3.fromValues(0.0, 0.0, 0.0));
+  // Particule
+    glMatrix.mat4.translate(part_mesh.model,part_mesh.model,glMatrix.vec3.fromValues(0.0, 1.2, 0.0));    
 
-  //Move the mirror
+  // Mirror
     glMatrix.mat4.translate(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(15.0, -2.5, 0.0));
     glMatrix.mat4.rotate(mirror_mesh.model,mirror_mesh.model,-1.5708, glMatrix.vec3.fromValues(0.0, 0.0, 1.0));
     glMatrix.mat4.scale(mirror_mesh.model,mirror_mesh.model,glMatrix.vec3.fromValues(4.0,4.0,4.0));
-  //get the invert transpose matrix used to determine the norm of the mirror
+    // get the invert transpose matrix used to determine the norm of the mirror
     var itM = glMatrix.mat4.create();
     itM = glMatrix.mat4.invert(itM, mirror_mesh.model);
     itM = glMatrix.mat4.transpose(itM, itM);
@@ -551,14 +567,13 @@ async function main() {
     glMatrix.vec3.transformMat4(mirror_norm,mirror_norm,itM);
     glMatrix.vec3.normalize(mirror_norm,mirror_norm);
     //console.log(mirror_norm);
-  //get the position of the mirror
+    // get the position of the mirror
     var mirror_position = glMatrix.vec3.fromValues(mirror_mesh.model[12],
                                                  mirror_mesh.model[13],
                                                  mirror_mesh.model[14],);
 	
-
-	//glMatrix.mat4.translate(refract_mesh.model,refract_mesh.model,glMatrix.vec3.fromValues(-16.0, -3.0, 0.0));
-  glMatrix.mat4.translate(refract_mesh.model,refract_mesh.model,glMatrix.vec3.fromValues(1.0, -2.0, -2.0));
+	// Sphere for refraction
+    glMatrix.mat4.translate(refract_mesh.model,refract_mesh.model,glMatrix.vec3.fromValues(1.0, -2.0, -2.0));
 
 	// Listeners to move the robot 
 	moveObjectKey(document,robot_mesh.model,1.0,["0","1"]);
@@ -567,7 +582,7 @@ async function main() {
 //// Particles ////
     //Create list of particle
     var particle_list = []
-    var nr_part = 2000;
+    var nr_part = 1000;
     for (var i = 0; i < nr_part; i = i +1){
     particle_list.push(new Particle(glMatrix.vec3.fromValues(0.0,0.0,0.0),
                           glMatrix.vec3.fromValues(0.0,1.0,0.0),
@@ -577,22 +592,10 @@ async function main() {
     }
 
 //// Colliders	////	
+  // requiert the list of object we want to check for collision
 	var colliders =[];
-	//colliders.push(pl_mesh.model, pl_mesh2.model,robot_mesh.model,bunny_hitbox,refract_mesh.model);
   colliders.push(pl_mesh.model, pl_mesh2.model, mars_mesh.model, venus_mesh.model,robot_hitbox,bunny_hitbox,refract_mesh.model);
 	
-//// Light source ////
-    // We define a light in space and retrieve its ID in the shader
-    const light_pos = glMatrix.vec3.fromValues(-7.0, 0.0, 1.0);
-    const u_light_pos = gl.getUniformLocation(shader_planet.program, 'u_light_pos');
-    const u_light_pos_sun = gl.getUniformLocation(shader_sun.program, 'u_light_pos');
-    const u_light_pos_robot = gl.getUniformLocation(shader_robot.program, 'u_light_pos');
-    
-    // We need to send the inverse transpose of the model matrix for the model
-    //const u_itM_p = gl.getUniformLocation(shader_planet.program, 'itM');
-
-    //Translate position of the sun to coincide with light source position
-    sun_mesh.model = glMatrix.mat4.translate(sun_mesh.model, sun_mesh.model, light_pos);
 
 //// Camera ////    
     position = glMatrix.vec3.fromValues(0, 0, -6.0)
@@ -604,17 +607,7 @@ async function main() {
 
     const camMatElem = document.querySelector("#camera_mat");
     const projMatElem = document.querySelector("#proj_mat");
-    //camera.show_projection_html(projMatElem, projection);
-
-
-    // Retrieve the adress of the cubemap texture
-    var texCube = make_texture_cubemap(gl, '../textures/cubemaps/lightblue');
-    const u_cubemap = gl.getUniformLocation(shader_cubemap.program, 'u_cubemap');
-    
-    
-    // We need to send the camera position to the shader
-    const u_view_dir = gl.getUniformLocation(shader_reflection.program, 'u_view_dir');
-    const u_view_dir_robot = gl.getUniformLocation(shader_robot.program, 'u_view_dir');
+    //camera.show_projection_html(projMatElem, projection);    
 
 //// Frame Buffer ////
     // Uncomment next part to have the Value of the code given by checkFramebufferStatus
@@ -632,8 +625,8 @@ async function main() {
     gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
 
   //Generate a texture to attach to fbo
-  //We use a texture and not a render buffer because we need to acces the information
-  //stocked to draw the mirror after
+  //We use a texture and not a render buffer because we need to acces/sample the 
+  //information stocked to draw the mirror after
     textureColorebuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureColorebuffer);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,c_width,c_height,0,gl.RGBA,gl.UNSIGNED_BYTE, null);
@@ -667,7 +660,7 @@ async function main() {
     */
 
 //// Parameters before animate loop ////
-    var deltaTime = 0;
+  var deltaTime = 0;
 	var prev_in_collision = [];
 	//rotation angle of planet 1
 	var theta1 =0.01;
@@ -682,9 +675,9 @@ async function main() {
   var fire = false;
 			
 //// Animate loop ////		
-    function animate(time) {
+  function animate(time) {
         deltaTime += 0.005;
-		camera.update(deltaTime);
+		    camera.update(deltaTime);
 		
 	//// Preprocessing	////
 		// ask what objects are in collision 
@@ -945,7 +938,7 @@ async function main() {
     shader_robot.use();
 		robot_mesh.activate(shader_robot);
     var unif = shader_robot.get_uniforms();
-    //robot_mesh.activate(shader_planet);
+    
 		//Check if in collision 
 		if(in_collision.includes(robot_mesh.model)){
 			glMatrix.mat4.translate(robot_mesh.model, robot_mesh.model, glMatrix.vec3.fromValues(0.0, 1.0, 0.0));
@@ -1006,8 +999,6 @@ async function main() {
         gl.uniformMatrix4fv(unif['view'], false, view);
         gl.uniformMatrix4fv(unif['proj'], false, projection);
 		
-        //send the light pos
-        gl.uniform3fv(u_light_pos_sun, light_pos);
 		
 		//Inverse transpose
         var itM = glMatrix.mat4.create();
@@ -1041,7 +1032,7 @@ async function main() {
 					part_added = part_added + 1;
 				}
 			}
-			//draw the particle - we use another additive blend mode
+			//draw the particle - we use another (additive) blend mode
       //it gives a glow effect when they are stacked one each other
 			gl.enable(gl.BLEND);
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -1056,7 +1047,7 @@ async function main() {
 					
 					model_part = glMatrix.mat4.translate(model_part,part_mesh.model,particle_list[i].position);
 					model_part = glMatrix.mat4.rotate(model_part, model_part, 1.5,particle_list[i].orientation);
-					model_part = glMatrix.mat4.scale(model_part,model_part,glMatrix.vec3.fromValues(particle_list[i].size*10,particle_list[i].size*10,particle_list[i].size*10));
+					model_part = glMatrix.mat4.scale(model_part,model_part,glMatrix.vec3.fromValues(particle_list[i].size*17,particle_list[i].size*17,particle_list[i].size*17));
 					gl.uniformMatrix4fv(unif['model'], false, model_part);
 		
 					gl.uniform4fv(u_color, particle_list[i].color);
