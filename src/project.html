@@ -421,9 +421,12 @@ async function main() {
 	// Shader for reflection
     var shader_reflection = make_shader(gl, source_reflection_V, source_reflection_F);
     const u_view_dir = gl.getUniformLocation(shader_reflection.program, 'u_view_dir');
+    const u_cubemap_refl = gl.getUniformLocation(shader_reflection.program, 'u_cubemap');
 	
 	//Shader refraction
 	  var shader_refraction = make_shader(gl,source_refraction_V,source_refraction_F);
+    const u_view_dir_refr = gl.getUniformLocation(shader_refraction.program, 'u_view_dir');
+    const u_cubemap_refr = gl.getUniformLocation(shader_refraction.program, 'u_cubemap');
 	
   //Shader for the planet
     var shader_planet = make_shader(gl,source_planet_V, source_planet_F);
@@ -723,7 +726,7 @@ async function main() {
 		//Texture
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texCube);
-        gl.uniform1i(u_cubemap, 0);
+        gl.uniform1i(u_cubemap_refl, 0);
 
         bunny_mesh.draw();
 		
@@ -750,12 +753,12 @@ async function main() {
         itM = glMatrix.mat4.invert(itM, refract_mesh.model);
         itM = glMatrix.mat4.transpose(itM, itM);
         gl.uniformMatrix4fv(unif['itmodel'],false,itM);
-        gl.uniform3fv(u_view_dir, camera.get_position());
+        gl.uniform3fv(u_view_dir_refr, camera.get_position());
         
 		//Texture
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texCube);
-        gl.uniform1i(u_cubemap, 0);
+        gl.uniform1i(u_cubemap_refr, 0);
 
         refract_mesh.draw();
 		
