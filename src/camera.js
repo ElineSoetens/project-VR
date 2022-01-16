@@ -126,15 +126,10 @@ var make_camera = function(canvas, position, up, yaw, pitch) {
         front_mirror = glMatrix.vec3.subtract(front_mirror,front_mirror,l);
         front_mirror = glMatrix.vec3.normalize(front_mirror,front_mirror);
 
-        // recompute right, up
+        // recompute right
         
         right_mirror = glMatrix.vec3.cross(right_mirror, front_mirror, world_up);
-        //right_mirror = glMatrix.vec3.cross(right_mirror, world_up, front_mirror);
         right_mirror = glMatrix.vec3.normalize(right_mirror, right_mirror);
-
-        up_mirror = glMatrix.vec3.cross(up_mirror, right_mirror, front_mirror);
-        //up_mirror = glMatrix.vec3.cross(up_mirror, front_mirror, right_mirror);
-        up_mirror = glMatrix.vec3.normalize(up_mirror, up_mirror);
 
         center_mirror = glMatrix.vec3.create();
         center_mirror = glMatrix.vec3.add(center_mirror, position_mirror, front_mirror);

@@ -18,39 +18,36 @@ function moveObjectKey(doc,model,y,keys){
 	doc.addEventListener('keydown', (event) => {
 		  const key = event.key;
 		  
-		//<li>1. Add the functions to use the arrows and +/- to move in 3 directions</li>
-		// 1. Your Code
-		//Up Down Right Left
+		//Up Down Right Left Front Back
 		  if (key === "0" || key === 'o') {
-		    // 1. Your code
-			//translation up to lower the view
+			//Robot goes up
 			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, y, 0.0));
 
 			return;
 		  }
 		   else if (key === "1" || key === 'l') {
-		   //translate low to shift up the view
+		   //Robot goes down
 		    glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -y, 0.0));
 			return;
 
 		}
 		else if ( key === 'm') {
-		//translate low to shift up the view
+		///Robot goes right
 		 glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-y, 0.0, 0.0));
 		 return;
  
 		} else if (key === 'k') {
-			//translate low to shift up the view
+			//Robot goes left
 			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(y, 0.0, 0.0));
 			return;
 	 
 		} else if (key === 'i') {
-			//translate low to shift up the view
+			//Robot goes front
 			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, -y));
 			return;
 	 
 		} else if  (key === 'p') {
-			//translate low to shift up the view
+			//Robot goes back
 			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, y));
 			return;
 	 
@@ -59,52 +56,6 @@ function moveObjectKey(doc,model,y,keys){
 },false);
 }
 
-
-
-function moveObjectKey(doc,model,y,keys){
-	doc.addEventListener('keydown', (event) => {
-		  const key = event.key;
-		  
-		//<li>1. Add the functions to use the arrows and +/- to move in 3 directions</li>
-		// 1. Your Code
-		//Up Down Right Left
-		  if (key === "0" || key === 'o') {
-		    // 1. Your code
-			//translation up to lower the view
-			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, y, 0.0));
-
-			return;
-		  }
-		   else if (key === "1" || key === 'l') {
-		   //translate low to shift up the view
-		    glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, -y, 0.0));
-			return;
-
-		}
-		else if ( key === 'm') {
-		//translate low to shift up the view
-		 glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(-y, 0.0, 0.0));
-		 return;
- 
-		} else if (key === 'k') {
-			//translate low to shift up the view
-			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(y, 0.0, 0.0));
-			return;
-	 
-		} else if (key === 'i') {
-			//translate low to shift up the view
-			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, -y));
-			return;
-	 
-		} else if  (key === 'p') {
-			//translate low to shift up the view
-			glMatrix.mat4.translate(model, model, glMatrix.vec3.fromValues(0.0, 0.0, y));
-			return;
-	 
-		}
-
-},false);
-}
 
 
 function checkCollisions(colliders_list,r_collider, others, r_other){
@@ -239,35 +190,33 @@ class Particle {
 		this.life = this.life - 0.005;
         if(this.life > 0.0){
             this.position = glMatrix.vec3.scaleAndAdd(this.position,this.position,this.velocity,0.005);
-			//plus rouge et extérieur
+			//more red and outside
 			if (this.category == 0){
 				
 				this.color[1] = this.color[1] - 0.005 * 1.0
             	this.color[2] = this.color[2] - 0.005 * 1.5
 			} 
-			//plus jaune et intérieur
+			//more yellow and inside
 			else {
 				this.color[1] = this.color[1] - 0.005 * 1.0
             	this.color[2] = this.color[2] - 0.005 * 4.0
 			}
             
-			//this.color[3] = this.color[3] - 0.005 * 2.0
+			
             this.size = Math.min(this.life/900, 0.001) 
 			return false;
         }
         else{
           if(part_added <= new_part){
-            //this.velocity = glMatrix.vec3.random(this.velocity,0.05);
+            
 			if(this.category == 0){
 				//red-external part of fire
-				
 				this.life = Math.random()*3.0;
 				this.position = glMatrix.vec3.random(this.position,0.45)
 				this.velocity = glMatrix.vec3.fromValues(Math.random()*0.6 - 0.3,0.4,Math.random()*0.6 - 0.3);
 				this.color = glMatrix.vec4.fromValues(1.0,0.6,0.4,1.0);
 			}else{
-				//yellow-internal part of fire
-				
+				//yellow-internal part of fire	
 				this.life = Math.random()*0.8;
 				this.position = glMatrix.vec3.random(this.position,0.35)
 				this.velocity = glMatrix.vec3.fromValues(Math.random()*1.0 - 0.5,Math.random()*2.2 - 0.3,Math.random()*1.0 - 0.5);
